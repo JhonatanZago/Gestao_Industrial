@@ -18,6 +18,22 @@ Paradas pertencem a uma producao e a um motivo da mesma Empresa:
 
 O intervalo deve ser positivo, estar contido na producao e nao se sobrepor a outra parada ativa; intervalos adjacentes sao permitidos. A resposta de producao informa `duracaoBrutaMinutos`, `tempoParadoMinutos` e `tempoProdutivoMinutos`, calculado como `max(0, bruto - parado)`. Historicos permanecem consultaveis apos inativacao e nao ha exclusao fisica.
 
+## Máquinas, recursos e turnos
+
+Máquinas/recursos produtivos são cadastrados por Empresa e Setor atual:
+
+- `POST|GET /api/v1/empresas/{empresaId}/maquinas`
+- `GET|PUT /api/v1/empresas/{empresaId}/maquinas/{maquinaId}`
+- `PATCH /api/v1/empresas/{empresaId}/maquinas/{maquinaId}/ativar|desativar`
+
+Turnos são dinâmicos e aceitam janelas que atravessam meia-noite. A duração nominal é calculada em minutos:
+
+- `POST|GET /api/v1/empresas/{empresaId}/turnos`
+- `GET|PUT /api/v1/empresas/{empresaId}/turnos/{turnoId}`
+- `PATCH /api/v1/empresas/{empresaId}/turnos/{turnoId}/ativar|desativar`
+
+Produções podem informar opcionalmente `maquinaId` e `turnoId`; paradas podem informar `maquinaId`. Os vínculos devem pertencer à mesma Empresa, estar ativos e, para máquinas, coincidir com o Setor da produção. Não há inferência automática de turno, divisão entre turnos, manutenção ou parada independente de produção nesta etapa.
+
 ## Stack
 
 - Java 17 / Spring Boot
