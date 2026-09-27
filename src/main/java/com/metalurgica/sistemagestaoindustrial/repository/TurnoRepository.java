@@ -8,6 +8,7 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     boolean existsByEmpresaIdAndCodigoAndIdNot(Long empresaId, String codigo, Long id);
     Optional<Turno> findByIdAndEmpresaId(Long id, Long empresaId);
     Optional<Turno> findByEmpresaIdAndCodigo(Long empresaId, String codigo);
+    java.util.List<Turno> findByEmpresaIdAndCodigoIn(Long empresaId, java.util.Collection<String> codigos);
     Page<Turno> findByEmpresaId(Long empresaId, Pageable pageable);
     Page<Turno> findByEmpresaIdAndAtivo(Long empresaId, Boolean ativo, Pageable pageable);
     Page<Turno> findByEmpresaIdAndCodigoContainingIgnoreCase(Long empresaId, String codigo, Pageable pageable);

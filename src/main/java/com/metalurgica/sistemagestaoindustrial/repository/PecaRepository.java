@@ -12,6 +12,7 @@ public interface PecaRepository extends JpaRepository<Peca, Long> {
     boolean existsByEmpresaIdAndCodigoAndIdNot(Long empresaId, String codigo, Long id);
     Optional<Peca> findByIdAndEmpresaId(Long id, Long empresaId);
     Optional<Peca> findByEmpresaIdAndCodigo(Long empresaId, String codigo);
+    java.util.List<Peca> findByEmpresaIdAndCodigoIn(Long empresaId, java.util.Collection<String> codigos);
     Page<Peca> findByEmpresaId(Long empresaId, Pageable pageable);
     Page<Peca> findByEmpresaIdAndAtivo(Long empresaId, Boolean ativo, Pageable pageable);
     Page<Peca> findByEmpresaIdAndCodigoContainingIgnoreCase(Long empresaId, String codigo, Pageable pageable);

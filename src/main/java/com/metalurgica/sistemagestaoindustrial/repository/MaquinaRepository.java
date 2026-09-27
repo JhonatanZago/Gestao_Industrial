@@ -8,6 +8,7 @@ public interface MaquinaRepository extends JpaRepository<Maquina, Long> {
     boolean existsByEmpresaIdAndCodigoAndIdNot(Long empresaId, String codigo, Long id);
     Optional<Maquina> findByIdAndEmpresaId(Long id, Long empresaId);
     Optional<Maquina> findByEmpresaIdAndCodigo(Long empresaId, String codigo);
+    java.util.List<Maquina> findByEmpresaIdAndCodigoIn(Long empresaId, java.util.Collection<String> codigos);
     Page<Maquina> findByEmpresaId(Long empresaId, Pageable pageable);
     Page<Maquina> findByEmpresaIdAndSetorId(Long empresaId, Long setorId, Pageable pageable);
     Page<Maquina> findByEmpresaIdAndAtivo(Long empresaId, Boolean ativo, Pageable pageable);

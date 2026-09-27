@@ -12,6 +12,7 @@ public interface FuncionarioRepository extends JpaRepository<Funcionario, Long> 
     boolean existsByEmpresaIdAndCodigoAndIdNot(Long empresaId, String codigo, Long id);
     Optional<Funcionario> findByIdAndEmpresaId(Long id, Long empresaId);
     Optional<Funcionario> findByEmpresaIdAndCodigo(Long empresaId, String codigo);
+    java.util.List<Funcionario> findByEmpresaIdAndCodigoIn(Long empresaId, java.util.Collection<String> codigos);
     Page<Funcionario> findByEmpresaId(Long empresaId, Pageable pageable);
     Page<Funcionario> findByEmpresaIdAndAtivo(Long empresaId, Boolean ativo, Pageable pageable);
     Page<Funcionario> findByEmpresaIdAndCodigoContainingIgnoreCase(Long empresaId, String codigo, Pageable pageable);

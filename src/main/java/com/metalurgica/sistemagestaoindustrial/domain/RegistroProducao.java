@@ -32,6 +32,11 @@ public class RegistroProducao {
     private Maquina maquina;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "turno_id")
     private Turno turno;
+    @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
+    private OrigemProducao origem = OrigemProducao.MANUAL;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "importacao_id")
+    private ImportacaoProducao importacao;
+    @Column(name = "importacao_linha") private Integer importacaoLinha;
     @Column(nullable = false, precision = 19, scale = 3)
     private BigDecimal quantidade;
     @Column(nullable = false)
