@@ -1,0 +1,3 @@
+package com.metalurgica.sistemagestaoindustrial.dto.response;
+import java.math.BigDecimal; import java.time.*;
+public record RegistroProducaoResponse(Long id, Long empresaId, Long setorId, String setorCodigo, String setorNome, Long funcionarioId, String funcionarioCodigo, String funcionarioNome, Long pecaId, String pecaCodigo, String pecaDescricao, BigDecimal quantidade, LocalDateTime inicio, LocalDateTime fim, long duracaoBrutaMinutos, long tempoParadoMinutos, long tempoProdutivoMinutos, Long maquinaId, String maquinaCodigo, String maquinaNome, Long turnoId, String turnoCodigo, String turnoNome, String observacao, boolean ativo, OffsetDateTime createdAt, OffsetDateTime updatedAt) { }
