@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.metalurgica.sistemagestaoindustrial.assistente.AssistenteErrorCode;
+import com.metalurgica.sistemagestaoindustrial.assistente.tool.AiToolException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.MultipartException;
@@ -61,6 +63,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<ErrorResponse> illegalArgument(IllegalArgumentException ex, HttpServletRequest req) {
         return ResponseEntity.badRequest().body(ErrorResponse.of(400, "Bad Request", ex.getMessage(), req.getRequestURI()));
+    }
+
+    @ExceptionHandler(AiToolException.class)
+    ResponseEntity<?> aiTool(AiToolException ex, HttpServletRequest req) {
+        var status = ex.getCode() == AssistenteErrorCode.AI_PERMISSION_DENIED ? HttpStatus.FORBIDDEN : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(new com.metalurgica.sistemagestaoindustrial.assistente.dto.ErroAssistente(
+                ex.getCode(), ex.getMessage(), null));
     }
 
     @ExceptionHandler({MultipartException.class, MissingServletRequestPartException.class})

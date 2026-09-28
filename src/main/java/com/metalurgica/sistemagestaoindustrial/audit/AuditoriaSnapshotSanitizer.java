@@ -90,6 +90,7 @@ public class AuditoriaSnapshotSanitizer {
         map.put(TipoRecursoAuditoria.PERFIL, fields("id", "codigo", "nome", "descricao", "permissoes"));
         map.put(TipoRecursoAuditoria.PERMISSAO, fields("id", "codigo", "nome", "descricao", "usuarioId", "perfilId", "concedida"));
         map.put(TipoRecursoAuditoria.IMPORTACAO, fields("id", "importacaoId", "arquivoNome", "setorId", "setor", "totalLinhas", "linhasValidas", "linhasInvalidas", "linhasImportadas", "quantidadeSucesso", "quantidadeErro", "status", "dataHora", "origem", "contexto"));
+        map.put(TipoRecursoAuditoria.DOCUMENTO, fields("id", "documentId", "contentHash", "status"));
         return Map.copyOf(map);
     }
 

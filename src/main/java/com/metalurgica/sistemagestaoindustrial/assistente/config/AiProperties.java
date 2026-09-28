@@ -5,6 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.ZoneId;
 
 @Component
 @ConfigurationProperties(prefix = "ai")
@@ -19,6 +20,10 @@ public class AiProperties {
     private long maxDocumentBytes = 5L * 1024 * 1024;
     private int maxRequestsPerMinute = 30;
     private int retryAttempts = 1;
+    private String timezone = "America/Sao_Paulo";
+    private boolean pdfEnabled;
+    private int chunkSize = 1_200;
+    private int chunkOverlap = 100;
 
     @PostConstruct
     public void validate() {
@@ -33,8 +38,18 @@ public class AiProperties {
                 || maxDocumentBytes < 1
                 || maxRequestsPerMinute < 1
                 || retryAttempts < 0
-                || retryAttempts > 2) {
+                || retryAttempts > 2
+                || timezone == null
+                || timezone.isBlank()
+                || chunkSize < 100
+                || chunkOverlap < 0
+                || chunkOverlap >= chunkSize) {
             throw new IllegalStateException("Configura\u00e7\u00e3o de IA inv\u00e1lida.");
+        }
+        try {
+            ZoneId.of(timezone);
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException("AI_TIMEZONE inv\u00e1lido.", exception);
         }
     }
 
@@ -116,5 +131,37 @@ public class AiProperties {
 
     public void setRetryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public boolean isPdfEnabled() {
+        return pdfEnabled;
+    }
+
+    public void setPdfEnabled(boolean pdfEnabled) {
+        this.pdfEnabled = pdfEnabled;
+    }
+
+    public int getChunkSize() {
+        return chunkSize;
+    }
+
+    public void setChunkSize(int chunkSize) {
+        this.chunkSize = chunkSize;
+    }
+
+    public int getChunkOverlap() {
+        return chunkOverlap;
+    }
+
+    public void setChunkOverlap(int chunkOverlap) {
+        this.chunkOverlap = chunkOverlap;
     }
 }
