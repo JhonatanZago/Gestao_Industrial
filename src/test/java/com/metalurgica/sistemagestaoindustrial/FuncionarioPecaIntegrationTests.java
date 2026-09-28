@@ -8,6 +8,8 @@ import com.metalurgica.sistemagestaoindustrial.repository.ParadaProducaoReposito
 import com.metalurgica.sistemagestaoindustrial.repository.MotivoParadaRepository;
 import com.metalurgica.sistemagestaoindustrial.repository.MaquinaRepository;
 import com.metalurgica.sistemagestaoindustrial.repository.TurnoRepository;
+import com.metalurgica.sistemagestaoindustrial.repository.ImportacaoProducaoRepository;
+import com.metalurgica.sistemagestaoindustrial.repository.ResultadoLinhaImportacaoRepository;
 import com.metalurgica.sistemagestaoindustrial.repository.SetorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,8 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class FuncionarioPecaIntegrationTests {
-    @Autowired MockMvc mvc;
+class FuncionarioPecaIntegrationTests extends AuthenticatedIntegrationTest {
     @Autowired EmpresaRepository empresaRepository;
     @Autowired FuncionarioRepository funcionarioRepository;
     @Autowired PecaRepository pecaRepository;
@@ -40,9 +41,11 @@ class FuncionarioPecaIntegrationTests {
     @Autowired SetorRepository setorRepository;
     @Autowired MaquinaRepository maquinaRepository;
     @Autowired TurnoRepository turnoRepository;
+    @Autowired ImportacaoProducaoRepository importacaoRepository;
+    @Autowired ResultadoLinhaImportacaoRepository resultadoImportacaoRepository;
 
     @BeforeEach
-    void clean() { paradaRepository.deleteAll(); motivoRepository.deleteAll(); registroProducaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); empresaRepository.deleteAll(); }
+    void clean() { resultadoImportacaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); registroProducaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
 
     @Test
     void preservesEmployeeCodeAndManagesLifecycle() throws Exception {
@@ -101,7 +104,7 @@ class FuncionarioPecaIntegrationTests {
         mvc.perform(get("/api/v1/empresas/" + a + "/pecas/" + id)).andExpect(status().isNotFound());
         mvc.perform(post("/api/v1/empresas/999/pecas").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"codigo\":\"X\",\"descricao\":\"X\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
         mvc.perform(post("/api/v1/empresas/" + a + "/pecas").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"codigo\":\"\",\"descricao\":\"\"}"))
                 .andExpect(status().isBadRequest());

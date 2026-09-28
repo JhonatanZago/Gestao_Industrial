@@ -1,5 +1,6 @@
 package com.metalurgica.sistemagestaoindustrial;
 
+import com.metalurgica.sistemagestaoindustrial.audit.*;
 import com.metalurgica.sistemagestaoindustrial.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,8 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class ParadasTemposIntegrationTests {
-    @Autowired MockMvc mvc;
+class ParadasTemposIntegrationTests extends AuthenticatedIntegrationTest {
     @Autowired EmpresaRepository empresaRepository;
     @Autowired SetorRepository setorRepository;
     @Autowired FuncionarioRepository funcionarioRepository;
@@ -27,9 +27,12 @@ class ParadasTemposIntegrationTests {
     @Autowired ParadaProducaoRepository paradaRepository;
     @Autowired MaquinaRepository maquinaRepository;
     @Autowired TurnoRepository turnoRepository;
+    @Autowired ImportacaoProducaoRepository importacaoRepository;
+    @Autowired EventoAuditoriaRepository eventoAuditoriaRepository;
+    @Autowired ResultadoLinhaImportacaoRepository resultadoImportacaoRepository;
 
     @BeforeEach
-    void clean() { paradaRepository.deleteAll(); motivoRepository.deleteAll(); producaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); empresaRepository.deleteAll(); }
+    void clean() { eventoAuditoriaRepository.deleteAll(); resultadoImportacaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); producaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
 
     @Test
     void calculatesActiveStoppedAndProductiveMinutesAndKeepsHistory() throws Exception {
@@ -38,11 +41,14 @@ class ParadasTemposIntegrationTests {
         var prod = createProduction(f);
         var p1 = createParada(f, prod, motivo, "2026-09-26T09:10:00", "2026-09-26T09:30:00");
         var p2 = createParada(f, prod, motivo, "2026-09-26T10:45:00", "2026-09-26T11:00:00");
+        var createEvent = eventoAuditoriaRepository.findAll().stream().filter(e -> e.getTipoRecurso() == TipoRecursoAuditoria.PARADA && e.getRecursoId().equals(p1)).findFirst().orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(AcaoAuditoria.CRIACAO, createEvent.getAcao());
 
         getProduction(f, prod).andExpect(jsonPath("$.duracaoBrutaMinutos").value(240)).andExpect(jsonPath("$.tempoParadoMinutos").value(35)).andExpect(jsonPath("$.tempoProdutivoMinutos").value(205));
         mvc.perform(patch(paradaPath(f, prod, p2) + "/desativar")).andExpect(status().isOk());
         getProduction(f, prod).andExpect(jsonPath("$.tempoParadoMinutos").value(20)).andExpect(jsonPath("$.tempoProdutivoMinutos").value(220));
         mvc.perform(patch(paradaPath(f, prod, p2) + "/ativar")).andExpect(status().isOk());
+        org.junit.jupiter.api.Assertions.assertTrue(eventoAuditoriaRepository.findAll().stream().anyMatch(e -> e.getTipoRecurso() == TipoRecursoAuditoria.PARADA && e.getRecursoId().equals(p2) && e.getAcao() == AcaoAuditoria.DESATIVACAO));
         mvc.perform(patch(path(f.empresa(), prod) + "/desativar")).andExpect(status().isOk());
         mvc.perform(get(paradaPath(f, prod, p1))).andExpect(status().isOk()).andExpect(jsonPath("$.ativo").value(true));
         mvc.perform(get(path(f.empresa(), prod))).andExpect(status().isOk()).andExpect(jsonPath("$.ativo").value(false));

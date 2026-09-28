@@ -1,5 +1,8 @@
 HELP.md
 .gradle
+.gradle/
+.gradle-user-home/
+.gradle-home/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -35,3 +38,11 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente
+.env
+.gradle-user-home-2/

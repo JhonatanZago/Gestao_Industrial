@@ -12,9 +12,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")
-class MaquinasTurnosIntegrationTests {
-    @Autowired MockMvc mvc; @Autowired EmpresaRepository empresaRepository; @Autowired SetorRepository setorRepository; @Autowired FuncionarioRepository funcionarioRepository; @Autowired PecaRepository pecaRepository; @Autowired RegistroProducaoRepository producaoRepository; @Autowired ParadaProducaoRepository paradaRepository; @Autowired MotivoParadaRepository motivoRepository; @Autowired MaquinaRepository maquinaRepository; @Autowired TurnoRepository turnoRepository;
-    @BeforeEach void clean() { paradaRepository.deleteAll(); motivoRepository.deleteAll(); producaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); empresaRepository.deleteAll(); }
+class MaquinasTurnosIntegrationTests extends AuthenticatedIntegrationTest {
+    @Autowired ImportacaoProducaoRepository importacaoRepository;
+    @Autowired ResultadoLinhaImportacaoRepository resultadoImportacaoRepository;
+    @Autowired EmpresaRepository empresaRepository; @Autowired SetorRepository setorRepository; @Autowired FuncionarioRepository funcionarioRepository; @Autowired PecaRepository pecaRepository; @Autowired RegistroProducaoRepository producaoRepository; @Autowired ParadaProducaoRepository paradaRepository; @Autowired MotivoParadaRepository motivoRepository; @Autowired MaquinaRepository maquinaRepository; @Autowired TurnoRepository turnoRepository;
+    @BeforeEach void clean() { resultadoImportacaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); producaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
 
     @Test void managesMachinesAndShiftsIncludingOvernightDuration() throws Exception {
         var f = fixture("A", "47111111111111");

@@ -19,6 +19,7 @@ public class RegistroProducaoMapper {
                 r.getQuantidade(), r.getInicio(), r.getFim(), bruto, tempoParado, Math.max(0, bruto - tempoParado),
                 r.getMaquina() == null ? null : r.getMaquina().getId(), r.getMaquina() == null ? null : r.getMaquina().getCodigo(), r.getMaquina() == null ? null : r.getMaquina().getNome(),
                 r.getTurno() == null ? null : r.getTurno().getId(), r.getTurno() == null ? null : r.getTurno().getCodigo(), r.getTurno() == null ? null : r.getTurno().getNome(),
+                r.getOrigem() == null ? null : r.getOrigem().name(), r.getImportacao() == null ? null : r.getImportacao().getId(), r.getImportacaoLinha(),
                 r.getObservacao(), r.isAtivo(), r.getCreatedAt(), r.getUpdatedAt());
     }
 }

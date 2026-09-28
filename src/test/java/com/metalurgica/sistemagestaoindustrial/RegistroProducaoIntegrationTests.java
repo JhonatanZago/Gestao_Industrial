@@ -1,5 +1,6 @@
 package com.metalurgica.sistemagestaoindustrial;
 
+import com.metalurgica.sistemagestaoindustrial.audit.*;
 import com.metalurgica.sistemagestaoindustrial.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class RegistroProducaoIntegrationTests {
-    @Autowired MockMvc mvc;
+class RegistroProducaoIntegrationTests extends AuthenticatedIntegrationTest {
     @Autowired EmpresaRepository empresaRepository;
     @Autowired SetorRepository setorRepository;
     @Autowired FuncionarioRepository funcionarioRepository;
@@ -32,17 +32,29 @@ class RegistroProducaoIntegrationTests {
     @Autowired MotivoParadaRepository motivoRepository;
     @Autowired MaquinaRepository maquinaRepository;
     @Autowired TurnoRepository turnoRepository;
+    @Autowired ImportacaoProducaoRepository importacaoRepository;
+    @Autowired ResultadoLinhaImportacaoRepository resultadoImportacaoRepository;
+    @Autowired EventoAuditoriaRepository eventoAuditoriaRepository;
 
     @BeforeEach
-    void clean() { paradaRepository.deleteAll(); motivoRepository.deleteAll(); producaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); empresaRepository.deleteAll(); }
+    void clean() { eventoAuditoriaRepository.deleteAll(); resultadoImportacaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); producaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
 
     @Test
     void createsProductionAndCalculatesEightyEightMinutes() throws Exception {
         var f = fixture("A", "41111111111111", "00147", "54871");
         mvc.perform(post(path(f.empresa()) ).contentType(MediaType.APPLICATION_JSON)
-                        .content(productionJson(f, "350", "2026-09-26T08:14:00", "2026-09-26T09:42:00")))
+                .content(productionJson(f, "350", "2026-09-26T08:14:00", "2026-09-26T09:42:00")))
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.quantidade").value(350))
                 .andExpect(jsonPath("$.duracaoBrutaMinutos").value(88)).andExpect(jsonPath("$.funcionarioCodigo").value("00147"));
+        var event = eventoAuditoriaRepository.findAll().stream().filter(e -> e.getTipoRecurso() == TipoRecursoAuditoria.REGISTRO_PRODUCAO).findFirst().orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals(AcaoAuditoria.CRIACAO, event.getAcao());
+        org.junit.jupiter.api.Assertions.assertTrue(event.getDadosNovos().contains("350"));
+        mvc.perform(get("/api/v1/empresas/" + f.empresa() + "/auditoria?tipoRecurso=REGISTRO_PRODUCAO&page=0&size=10"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].tipoRecurso").value("REGISTRO_PRODUCAO"));
+        mvc.perform(get("/api/v1/empresas/" + f.empresa() + "/auditoria/REGISTRO_PRODUCAO/" + event.getRecursoId()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.content[0].alteracoes").isArray());
+        mvc.perform(get("/api/v1/empresas/" + f.empresa() + "/auditoria?page=0&size=101"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -96,6 +108,9 @@ class RegistroProducaoIntegrationTests {
         createProduction(f, "10", "2026-09-26T08:00:00", "2026-09-26T09:00:00");
         var id = producaoRepository.findAll().get(0).getId();
         mvc.perform(put(path(f.empresa()) + "/" + id).contentType(MediaType.APPLICATION_JSON).content(productionJson(f, "11", "2026-09-26T08:00:00", "2026-09-26T09:00:00"))).andExpect(status().isOk()).andExpect(jsonPath("$.quantidade").value(11));
+        var updateEvent = eventoAuditoriaRepository.findAll().stream().filter(e -> e.getTipoRecurso() == TipoRecursoAuditoria.REGISTRO_PRODUCAO && e.getRecursoId().equals(id) && e.getAcao() == AcaoAuditoria.ALTERACAO).findFirst().orElseThrow();
+        org.junit.jupiter.api.Assertions.assertTrue(updateEvent.getDadosAnteriores().contains("10"));
+        org.junit.jupiter.api.Assertions.assertTrue(updateEvent.getDadosNovos().contains("11"));
         mvc.perform(get(path(f.empresa()) + "?funcionarioId=" + f.funcionario() + "&page=0&size=1")).andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1));
         mvc.perform(patch(path(f.empresa()) + "/" + id + "/desativar")).andExpect(status().isOk()).andExpect(jsonPath("$.ativo").value(false));
         mvc.perform(get(path(f.empresa()) + "/" + id)).andExpect(status().isOk()).andExpect(jsonPath("$.ativo").value(false));

@@ -4,10 +4,11 @@ import com.metalurgica.sistemagestaoindustrial.domain.Funcionario;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.Optional;
 
-public interface FuncionarioRepository extends JpaRepository<Funcionario, Long> {
+public interface FuncionarioRepository extends JpaRepository<Funcionario, Long>, JpaSpecificationExecutor<Funcionario> {
     boolean existsByEmpresaIdAndCodigo(Long empresaId, String codigo);
     boolean existsByEmpresaIdAndCodigoAndIdNot(Long empresaId, String codigo, Long id);
     Optional<Funcionario> findByIdAndEmpresaId(Long id, Long empresaId);

@@ -8,6 +8,8 @@ import com.metalurgica.sistemagestaoindustrial.repository.ParadaProducaoReposito
 import com.metalurgica.sistemagestaoindustrial.repository.MotivoParadaRepository;
 import com.metalurgica.sistemagestaoindustrial.repository.MaquinaRepository;
 import com.metalurgica.sistemagestaoindustrial.repository.TurnoRepository;
+import com.metalurgica.sistemagestaoindustrial.repository.ImportacaoProducaoRepository;
+import com.metalurgica.sistemagestaoindustrial.repository.ResultadoLinhaImportacaoRepository;
 import com.metalurgica.sistemagestaoindustrial.repository.SetorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class EmpresaSetorIntegrationTests {
-    @Autowired MockMvc mvc;
+class EmpresaSetorIntegrationTests extends AuthenticatedIntegrationTest {
     @Autowired SetorRepository setorRepository;
     @Autowired FuncionarioRepository funcionarioRepository;
     @Autowired PecaRepository pecaRepository;
@@ -39,9 +40,11 @@ class EmpresaSetorIntegrationTests {
     @Autowired EmpresaRepository empresaRepository;
     @Autowired MaquinaRepository maquinaRepository;
     @Autowired TurnoRepository turnoRepository;
+    @Autowired ImportacaoProducaoRepository importacaoRepository;
+    @Autowired ResultadoLinhaImportacaoRepository resultadoImportacaoRepository;
 
     @BeforeEach
-    void clean() { paradaRepository.deleteAll(); motivoRepository.deleteAll(); registroProducaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); empresaRepository.deleteAll(); }
+    void clean() { resultadoImportacaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); registroProducaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
 
     @Test
     void createsEmpresaWithNormalizedCnpjAndManagesLifecycle() throws Exception {
@@ -69,7 +72,7 @@ class EmpresaSetorIntegrationTests {
     void preventsCrossCompanySectorAccess() throws Exception {
         var a = createEmpresa("A", "11111111111111"); var b = createEmpresa("B", "22222222222222"); createSetor(b, "LASER", "Laser");
         var setorId = setorRepository.findAll().get(0).getId();
-        mvc.perform(get("/api/v1/empresas/" + a + "/setores/" + setorId)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/empresas/" + a + "/setores/" + setorId)).andExpect(status().isForbidden());
     }
 
     @Test
@@ -77,9 +80,10 @@ class EmpresaSetorIntegrationTests {
         mvc.perform(post("/api/v1/empresas").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"razaoSocial\":\"\",\"nomeFantasia\":\"A\",\"cnpj\":\"123\"}"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.fields.razaoSocial").exists());
+        createEmpresa("A", "33333333333333");
         mvc.perform(post("/api/v1/empresas/999/setores").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"codigo\":\"PINT\",\"nome\":\"Pintura\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isForbidden());
     }
 
     private long createEmpresa(String nome, String cnpj) throws Exception {

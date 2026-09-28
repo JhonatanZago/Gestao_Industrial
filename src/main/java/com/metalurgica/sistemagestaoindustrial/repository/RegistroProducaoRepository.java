@@ -3,16 +3,25 @@ package com.metalurgica.sistemagestaoindustrial.repository;
 import com.metalurgica.sistemagestaoindustrial.domain.RegistroProducao;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface RegistroProducaoRepository extends JpaRepository<RegistroProducao, Long>, JpaSpecificationExecutor<RegistroProducao> {
+    @Override
+    @EntityGraph(attributePaths = {"empresa", "setor", "funcionario", "peca", "maquina", "turno"})
+    List<RegistroProducao> findAll(Specification<RegistroProducao> spec, Sort sort);
+
     Page<RegistroProducao> findByEmpresaId(Long empresaId, Pageable pageable);
+    java.util.Optional<RegistroProducao> findByIdAndEmpresaId(Long id, Long empresaId);
+    java.util.List<RegistroProducao> findByEmpresaIdAndImportacaoId(Long empresaId, Long importacaoId);
 
     @Query("""
            select case when count(r) > 0 then true else false end

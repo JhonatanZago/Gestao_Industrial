@@ -1,6 +1,7 @@
 package com.metalurgica.sistemagestaoindustrial.service;
 
 import com.metalurgica.sistemagestaoindustrial.domain.Peca;
+import com.metalurgica.sistemagestaoindustrial.audit.*;
 import com.metalurgica.sistemagestaoindustrial.dto.request.PecaRequest;
 import com.metalurgica.sistemagestaoindustrial.dto.response.PecaResponse;
 import com.metalurgica.sistemagestaoindustrial.exception.DuplicateResourceException;
@@ -11,22 +12,25 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 public class PecaService {
     private final PecaRepository repository;
     private final EmpresaService empresaService;
     private final PecaMapper mapper;
+    private final AuditoriaService auditoriaService;
 
-    public PecaService(PecaRepository repository, EmpresaService empresaService, PecaMapper mapper) {
-        this.repository = repository; this.empresaService = empresaService; this.mapper = mapper;
+    public PecaService(PecaRepository repository, EmpresaService empresaService, PecaMapper mapper, AuditoriaService auditoriaService) {
+        this.repository = repository; this.empresaService = empresaService; this.mapper = mapper; this.auditoriaService = auditoriaService;
     }
 
     @Transactional
     public PecaResponse create(Long empresaId, PecaRequest request) {
         var empresa = empresaService.find(empresaId); var codigo = normalize(request.codigo()); ensureUnique(empresaId, codigo, null);
         var p = new Peca(); p.setEmpresa(empresa); p.setCodigo(codigo); p.setDescricao(EmpresaService.normalizeText(request.descricao())); p.touchForCreate();
-        return mapper.toResponse(repository.save(p));
+        var saved = repository.save(p); auditoriaService.record(empresaId, TipoRecursoAuditoria.PECA, saved.getId(), AcaoAuditoria.CRIACAO, OrigemAuditoria.MANUAL, null, snapshot(saved), null, null); return mapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -52,12 +56,12 @@ public class PecaService {
     @Transactional
     public PecaResponse update(Long empresaId, Long pecaId, PecaRequest request) {
         var p = find(empresaId, pecaId); var codigo = normalize(request.codigo()); ensureUnique(empresaId, codigo, pecaId);
-        p.setCodigo(codigo); p.setDescricao(EmpresaService.normalizeText(request.descricao())); p.touchForUpdate(); return mapper.toResponse(repository.save(p));
+        var before = snapshot(p); p.setCodigo(codigo); p.setDescricao(EmpresaService.normalizeText(request.descricao())); p.touchForUpdate(); var saved = repository.save(p); auditoriaService.record(empresaId, TipoRecursoAuditoria.PECA, pecaId, AcaoAuditoria.ALTERACAO, OrigemAuditoria.MANUAL, before, snapshot(saved), null, null); return mapper.toResponse(saved);
     }
 
     @Transactional
     public PecaResponse setActive(Long empresaId, Long pecaId, boolean active) {
-        var p = find(empresaId, pecaId); p.setAtivo(active); p.touchForUpdate(); return mapper.toResponse(repository.save(p));
+        var p = find(empresaId, pecaId); var before = snapshot(p); p.setAtivo(active); p.touchForUpdate(); var saved = repository.save(p); auditoriaService.record(empresaId, TipoRecursoAuditoria.PECA, pecaId, active ? AcaoAuditoria.ATIVACAO : AcaoAuditoria.DESATIVACAO, OrigemAuditoria.MANUAL, before, snapshot(saved), null, null); return mapper.toResponse(saved);
     }
 
     private void ensureUnique(Long empresaId, String codigo, Long id) {
@@ -66,4 +70,5 @@ public class PecaService {
     }
 
     private static String normalize(String value) { return EmpresaService.normalizeText(value); }
+    private static Map<String, Object> snapshot(Peca p) { var values = new LinkedHashMap<String, Object>(); values.put("id", p.getId()); values.put("codigo", p.getCodigo()); values.put("descricao", p.getDescricao()); values.put("ativo", p.isAtivo()); return values; }
 }

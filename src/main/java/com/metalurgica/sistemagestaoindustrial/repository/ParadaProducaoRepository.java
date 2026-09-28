@@ -9,6 +9,7 @@ import java.util.*;
 
 public interface ParadaProducaoRepository extends JpaRepository<ParadaProducao, Long> {
     Optional<ParadaProducao> findByIdAndEmpresaIdAndRegistroProducaoId(Long id, Long empresaId, Long producaoId);
+    Optional<ParadaProducao> findByIdAndEmpresaId(Long id, Long empresaId);
     Page<ParadaProducao> findByEmpresaIdAndRegistroProducaoId(Long empresaId, Long producaoId, Pageable pageable);
     List<ParadaProducao> findByRegistroProducaoIdInAndAtivoTrue(Collection<Long> producaoIds);
     @Query("""
