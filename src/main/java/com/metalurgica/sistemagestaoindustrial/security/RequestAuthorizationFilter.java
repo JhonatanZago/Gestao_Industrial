@@ -15,17 +15,20 @@ public class RequestAuthorizationFilter extends OncePerRequestFilter {
     private static final Pattern COMPANY_PATH = Pattern.compile("^/api/v1/empresas/(\\d+)(?:/.*)?$");
     private final AuthorizationService authorizationService;
     private final SectorScopeService sectorScopeService;
+    private final SecurityErrorWriter securityErrorWriter;
 
-    public RequestAuthorizationFilter(AuthorizationService authorizationService, SectorScopeService sectorScopeService) {
+    public RequestAuthorizationFilter(AuthorizationService authorizationService, SectorScopeService sectorScopeService,
+                                      SecurityErrorWriter securityErrorWriter) {
         this.authorizationService = authorizationService;
         this.sectorScopeService = sectorScopeService;
+        this.securityErrorWriter = securityErrorWriter;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
         throws ServletException, IOException {
         var path = request.getRequestURI();
-        if (path.startsWith("/api/v1/auth/") || path.equals("/actuator/health")) {
+        if (path.startsWith("/api/v1/auth/") || path.startsWith("/actuator/") || path.startsWith("/api/v1/operacao/")) {
             chain.doFilter(request, response);
             return;
         }
@@ -38,13 +41,13 @@ public class RequestAuthorizationFilter extends OncePerRequestFilter {
             if (authorizationService.hasPermission(authentication, "EMPRESA_GERENCIAR")) {
                 chain.doFilter(request, response);
             } else {
-                deny(response);
+                deny(request, response);
             }
             return;
         }
         var matcher = COMPANY_PATH.matcher(path);
         if (!matcher.matches() || !authorizationService.belongsToCompany(authentication, Long.valueOf(matcher.group(1)))) {
-            deny(response); return;
+            deny(request, response); return;
         }
         var companyId = Long.valueOf(matcher.group(1));
         var jwt = (JwtAuthenticationToken) authentication;
@@ -53,12 +56,12 @@ public class RequestAuthorizationFilter extends OncePerRequestFilter {
             var userId = Long.valueOf(jwt.getToken().getSubject());
             var profile = jwt.getToken().getClaimAsString("perfil");
             if (!sectorScopeService.canAccess(userId, profile, companyId, sectorId)) {
-                deny(response); return;
+                deny(request, response); return;
             }
         }
         var required = requiredPermission(path, request.getMethod());
         if (required == null || !authorizationService.hasPermission(authentication, required)) {
-            deny(response); return;
+            deny(request, response); return;
         }
         chain.doFilter(request, response);
     }
@@ -94,10 +97,8 @@ public class RequestAuthorizationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    private void deny(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"erro\":\"Acesso negado\"}");
+    private void deny(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        securityErrorWriter.write(request, response, org.springframework.http.HttpStatus.FORBIDDEN, "Acesso negado.");
     }
 
     private Long explicitSectorId(HttpServletRequest request) {

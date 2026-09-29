@@ -10,5 +10,8 @@ public class ImportacaoProducao {
  @Enumerated(EnumType.STRING) @Column(nullable=false,length=20) private StatusImportacao status;
  @Column(nullable=false) private int totalLinhas; @Column(nullable=false) private int linhasValidas; @Column(nullable=false) private int linhasInvalidas; @Column(nullable=false) private int linhasImportadas;
  @Column(name="iniciado_em",nullable=false) private OffsetDateTime iniciadoEm; @Column(name="finalizado_em") private OffsetDateTime finalizadoEm; @Column(name="created_at",nullable=false) private OffsetDateTime createdAt;
+ @Column(name="correlation_id",length=100) private String correlationId;
+ @Column(name="erro_codigo",length=80) private String erroCodigo;
+ @Column(name="erro_mensagem",length=500) private String erroMensagem;
  public void touchCreate(){var n=OffsetDateTime.now();createdAt=n;iniciadoEm=n;status=StatusImportacao.RECEBIDA;}
 }

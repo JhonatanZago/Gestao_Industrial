@@ -10,19 +10,27 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import com.metalurgica.sistemagestaoindustrial.observability.OperationalMetrics;
 
 @RestController
 @RequestMapping("/api/v1/empresas/{empresaId}/analytics")
 public class AnalyticsResource {
     private final AnalyticsService service;
+    private final OperationalMetrics metrics;
 
-    public AnalyticsResource(AnalyticsService service) {
+    public AnalyticsResource(AnalyticsService service, OperationalMetrics metrics) {
         this.service = service;
+        this.metrics = metrics;
     }
 
     @GetMapping("/resumo")
     public ResumoProducaoResponse summary(@PathVariable Long empresaId, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime inicio, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime fim, Filters filters, @RequestParam(defaultValue = "false") boolean incluirQualidade) {
-        return service.summary(empresaId, filters.query(inicio, fim), incluirQualidade);
+        long started = metrics.start();
+        try {
+            var result = service.summary(empresaId, filters.query(inicio, fim), incluirQualidade);
+            metrics.dashboard(OperationalMetrics.Outcome.SUCCESS, started);
+            return result;
+        } catch (RuntimeException exception) { metrics.dashboard(OperationalMetrics.Outcome.FAILED, started); throw exception; }
     }
 
     @GetMapping("/setores")

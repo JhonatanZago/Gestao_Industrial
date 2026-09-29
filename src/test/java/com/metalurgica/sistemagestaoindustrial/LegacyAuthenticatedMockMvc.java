@@ -56,7 +56,9 @@ final class LegacyAuthenticatedMockMvc {
                 var companyId = Long.valueOf(matcher.group(1));
                 var token = empresaRepository.existsById(companyId) ? tokenFor(companyId) : rootToken();
                 request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
-            } else if (request.getRequestURI().equals("/api/v1/empresas")) {
+            } else if (request.getRequestURI().equals("/api/v1/empresas")
+                    || request.getRequestURI().startsWith("/actuator/")
+                    || request.getRequestURI().startsWith("/api/v1/operacao/")) {
                 request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + rootToken());
             }
             return request;

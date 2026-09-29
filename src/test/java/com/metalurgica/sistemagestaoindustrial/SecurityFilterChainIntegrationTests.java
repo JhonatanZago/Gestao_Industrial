@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -32,7 +33,10 @@ class SecurityFilterChainIntegrationTests {
     @Test
     void rejectsProtectedResourceWithoutBearerToken() throws Exception {
         mvc.perform(get("/api/v1/empresas/1/setores"))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.code").value("ACCESS_DENIED"))
+            .andExpect(jsonPath("$.correlationId").isNotEmpty())
+            .andExpect(header().exists("X-Correlation-Id"));
     }
 
     @Test
@@ -48,7 +52,19 @@ class SecurityFilterChainIntegrationTests {
         mvc.perform(get("/api/v1/empresas/1/setores")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer definitely-not-a-jwt"))
             .andExpect(status().isUnauthorized())
-            .andExpect(jsonPath("$.erro").value("Autenticação necessária"));
+            .andExpect(jsonPath("$.message").value("Autenticação necessária."))
+            .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
+    void preservesValidCorrelationIdAndReplacesInvalidOne() throws Exception {
+        mvc.perform(get("/api/v1/empresas/1/setores").header("X-Correlation-Id", "abc-123"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(header().string("X-Correlation-Id", "abc-123"))
+            .andExpect(jsonPath("$.correlationId").value("abc-123"));
+        mvc.perform(get("/api/v1/empresas/1/setores").header("X-Correlation-Id", "invalid value"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(header().string("X-Correlation-Id", org.hamcrest.Matchers.matchesPattern("[0-9a-f-]{36}")));
     }
 
     @Test

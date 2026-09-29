@@ -35,16 +35,19 @@ public class SecurityConfig {
     private final AuthorizationService authorizationService;
     private final SectorScopeService sectorScopeService;
     private final String allowedOrigins;
+    private final SecurityErrorWriter securityErrorWriter;
 
     public SecurityConfig(JwtProperties jwtProperties,
                           UsuarioRepository usuarioRepository,
                           AuthorizationService authorizationService,
                           SectorScopeService sectorScopeService,
+                          SecurityErrorWriter securityErrorWriter,
                           @Value("${security.cors.allowed-origins}") String allowedOrigins) {
         this.jwtProperties = jwtProperties;
         this.usuarioRepository = usuarioRepository;
         this.authorizationService = authorizationService;
         this.sectorScopeService = sectorScopeService;
+        this.securityErrorWriter = securityErrorWriter;
         this.allowedOrigins = allowedOrigins;
     }
 
@@ -55,14 +58,15 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/v1/auth/login", "/actuator/health").permitAll()
+                .requestMatchers("/api/v1/auth/login", "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness").permitAll()
+                .requestMatchers("/actuator/info", "/actuator/metrics/**", "/actuator/prometheus", "/api/v1/operacao/**").hasAuthority("OPERACAO_MONITORAR")
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
                 .decoder(jwtDecoder())
                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
                 .authenticationEntryPoint(this::writeUnauthorized))
             .addFilterAfter(new CredentialVersionFilter(usuarioRepository), BearerTokenAuthenticationFilter.class)
-            .addFilterAfter(new RequestAuthorizationFilter(authorizationService, sectorScopeService), CredentialVersionFilter.class)
+            .addFilterAfter(new RequestAuthorizationFilter(authorizationService, sectorScopeService, securityErrorWriter), CredentialVersionFilter.class)
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint(this::writeUnauthorized)
                 .accessDeniedHandler(accessDeniedHandler()));
@@ -98,8 +102,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Correlation-Id"));
+        configuration.setExposedHeaders(List.of("Authorization", "X-Correlation-Id"));
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
@@ -111,17 +115,13 @@ public class SecurityConfig {
     @Bean
     AccessDeniedHandler accessDeniedHandler() {
         return (request, response, exception) -> {
-            response.setStatus(HttpStatus.FORBIDDEN.value());
-            response.setContentType("application/json");
-            response.getWriter().write("{\"erro\":\"Acesso negado\"}");
+            securityErrorWriter.write(request, response, HttpStatus.FORBIDDEN, "Acesso negado.");
         };
     }
 
     private void writeUnauthorized(jakarta.servlet.http.HttpServletRequest request,
                                    jakarta.servlet.http.HttpServletResponse response,
                                    Exception exception) throws java.io.IOException {
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType("application/json");
-        response.getWriter().write("{\"erro\":\"Autenticação necessária\"}");
+        securityErrorWriter.write(request, response, HttpStatus.UNAUTHORIZED, "Autenticação necessária.");
     }
 }

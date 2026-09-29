@@ -17,6 +17,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,6 +36,7 @@ class RelatorioExecutivoIntegrationTests {
     @Autowired JwtTokenService tokenService;
     @Autowired SetorRepository setorRepository;
     @Autowired UsuarioSetorRepository usuarioSetorRepository;
+    @Autowired MeterRegistry meterRegistry;
 
     private Empresa empresa;
     private String adminToken;
@@ -62,6 +64,9 @@ class RelatorioExecutivoIntegrationTests {
 
     @Test
     void returnsCompactExecutiveReportAndHidesFinancialSectionForGestor() throws Exception {
+        double jsonBefore = reportCount("json", "success");
+        double csvBefore = reportCount("csv", "success");
+        double xlsxBefore = reportCount("xlsx", "success");
         var path = "/api/v1/empresas/" + empresa.getId() + "/relatorios/executivo?inicio=2026-09-01T00:00:00&fim=2026-09-30T23:59:00";
         mvc.perform(get(path).header("Authorization", "Bearer " + gestorToken))
             .andExpect(status().isOk())
@@ -84,6 +89,14 @@ class RelatorioExecutivoIntegrationTests {
             .andExpect(status().isOk());
         mvc.perform(get(path + "&setorId=" + forbiddenSector.getId()).header("Authorization", "Bearer " + gestorToken))
             .andExpect(status().isForbidden());
+        org.junit.jupiter.api.Assertions.assertTrue(reportCount("json", "success") >= jsonBefore + 2);
+        org.junit.jupiter.api.Assertions.assertEquals(csvBefore + 1, reportCount("csv", "success"));
+        org.junit.jupiter.api.Assertions.assertEquals(xlsxBefore + 1, reportCount("xlsx", "success"));
+    }
+
+    private double reportCount(String format, String outcome) {
+        var counter = meterRegistry.find("report.generation").tags("format", format, "outcome", outcome).counter();
+        return counter == null ? 0 : counter.count();
     }
 
     private Setor sector(String code, String name) {

@@ -5,6 +5,8 @@ import com.metalurgica.sistemagestaoindustrial.report.ReportLimitsProperties;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.metalurgica.sistemagestaoindustrial.observability.OperationalMetrics;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -16,10 +18,15 @@ import java.util.List;
 @Service
 public class RelatorioExportService {
     private final ReportLimitsProperties limits;
+    private final OperationalMetrics metrics;
 
-    public RelatorioExportService(ReportLimitsProperties limits) { this.limits = limits; }
+    public RelatorioExportService(ReportLimitsProperties limits) { this(limits, null); }
+    @Autowired
+    public RelatorioExportService(ReportLimitsProperties limits, OperationalMetrics metrics) { this.limits = limits; this.metrics = metrics; }
 
     public byte[] csv(RelatorioExecutivoResponse report) {
+        long started = metrics == null ? 0 : metrics.start();
+        try {
         validateSize(report);
         var out = new StringBuilder("sep=;\r\n");
         row(out, "Secao", "Campo", "Valor");
@@ -37,25 +44,29 @@ public class RelatorioExportService {
         for (var item : report.paradas()) row(out, "Paradas", item.codigo(), item.tempoParadoMinutos());
         if (report.financeiro() != null) for (var item : report.financeiro()) row(out, "Financeiro", item.moeda(), item.valorTotalCalculado());
         for (var point : report.pontosAtencao()) row(out, "PontosAtencao", "mensagem", point);
-        return out.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] result = out.toString().getBytes(StandardCharsets.UTF_8);
+        if (metrics != null) metrics.report(OperationalMetrics.ReportFormatTag.CSV, OperationalMetrics.Outcome.SUCCESS, started);
+        return result;
+        } catch (RuntimeException exception) { if (metrics != null) metrics.report(OperationalMetrics.ReportFormatTag.CSV, OperationalMetrics.Outcome.FAILED, started); throw exception; }
     }
 
     public byte[] xlsx(RelatorioExecutivoResponse report) {
-        validateSize(report);
-        try (Workbook workbook = new XSSFWorkbook(); var bytes = new ByteArrayOutputStream()) {
-            summarySheet(workbook, report);
-            dimensionSheet(workbook, "Setores", report.setores());
-            dimensionSheet(workbook, "Funcionarios", report.funcionarios());
-            dimensionSheet(workbook, "Pecas", report.pecas());
-            dimensionSheet(workbook, "Maquinas", report.maquinas());
-            dimensionSheet(workbook, "Turnos", report.turnos());
-            stopSheet(workbook, report.paradas());
-            metaSheet(workbook, report.metas());
-            if (report.financeiro() != null) financialSheet(workbook, report.financeiro());
-            workbook.write(bytes);
-            return bytes.toByteArray();
-        } catch (IOException e) {
-            throw new IllegalStateException("Nao foi possivel gerar XLSX.", e);
+        long started = metrics == null ? 0 : metrics.start();
+        try {
+            validateSize(report);
+            try (Workbook workbook = new XSSFWorkbook(); var bytes = new ByteArrayOutputStream()) {
+                summarySheet(workbook, report);
+                dimensionSheet(workbook, "Setores", report.setores()); dimensionSheet(workbook, "Funcionarios", report.funcionarios());
+                dimensionSheet(workbook, "Pecas", report.pecas()); dimensionSheet(workbook, "Maquinas", report.maquinas()); dimensionSheet(workbook, "Turnos", report.turnos());
+                stopSheet(workbook, report.paradas()); metaSheet(workbook, report.metas());
+                if (report.financeiro() != null) financialSheet(workbook, report.financeiro());
+                workbook.write(bytes); byte[] result = bytes.toByteArray();
+                if (metrics != null) metrics.report(OperationalMetrics.ReportFormatTag.XLSX, OperationalMetrics.Outcome.SUCCESS, started);
+                return result;
+            } catch (IOException e) { throw new IllegalStateException("Nao foi possivel gerar XLSX.", e); }
+        } catch (RuntimeException e) {
+            if (metrics != null) metrics.report(OperationalMetrics.ReportFormatTag.XLSX, OperationalMetrics.Outcome.FAILED, started);
+            throw e;
         }
     }
 

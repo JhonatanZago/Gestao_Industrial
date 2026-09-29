@@ -14,6 +14,7 @@ import com.metalurgica.sistemagestaoindustrial.assistente.security.AiRateLimiter
 import com.metalurgica.sistemagestaoindustrial.assistente.security.AssistenteSecurityContextResolver;
 import com.metalurgica.sistemagestaoindustrial.assistente.telemetry.AiTelemetry;
 import com.metalurgica.sistemagestaoindustrial.assistente.tool.*;
+import com.metalurgica.sistemagestaoindustrial.resilience.RemoteCallPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,10 +39,12 @@ public class AssistenteService {
     private final AiRateLimiter rateLimiter;
     private final AiTelemetry telemetry;
     private final Clock clock;
+    private final RemoteCallPolicy remoteCallPolicy;
 
     public AssistenteService(AiProperties properties, ChatModelGateway chatGateway, AiToolCatalog toolCatalog,
                              AssistenteSecurityContextResolver contextResolver, AssistenteQuestionPlanner planner,
-                             RagDocumentService ragDocumentService, AiRateLimiter rateLimiter, AiTelemetry telemetry) {
+                             RagDocumentService ragDocumentService, AiRateLimiter rateLimiter, AiTelemetry telemetry,
+                             RemoteCallPolicy remoteCallPolicy) {
         this.properties = properties;
         this.chatGateway = chatGateway;
         this.toolCatalog = toolCatalog;
@@ -53,6 +56,7 @@ public class AssistenteService {
         this.ragDocumentService = ragDocumentService;
         this.rateLimiter = rateLimiter;
         this.telemetry = telemetry;
+        this.remoteCallPolicy = remoteCallPolicy;
         this.clock = Clock.system(ZoneId.of(properties.getTimezone()));
     }
 
@@ -123,16 +127,10 @@ public class AssistenteService {
         var messages = promptContextAssembler.assemble(question, toolResult, documents);
         var definitions = toolCatalog.definitions().stream()
                 .map(d -> new ChatModelGateway.ToolDefinition(d.name(), d.description(), d.inputSchema())).toList();
-        var attempts = 0;
-        while (true) {
-            try {
-                var response = chatGateway.complete(new ChatModelGateway.ChatModelRequest(messages, definitions,
-                        properties.getMaxOutputTokens()));
-                return response.answer() == null ? "Não foi possível gerar uma resposta textual fundamentada." : response.answer();
-            } catch (AiProviderException exception) {
-                if (!exception.isTransientFailure() || attempts++ >= properties.getRetryAttempts()) throw exception;
-            }
-        }
+        var response = remoteCallPolicy.execute(RemoteCallPolicy.Operation.READ_IDEMPOTENT,
+                () -> chatGateway.complete(new ChatModelGateway.ChatModelRequest(messages, definitions,
+                        properties.getMaxOutputTokens())));
+        return response.answer() == null ? "Não foi possível gerar uma resposta textual fundamentada." : response.answer();
     }
 
     private RespostaAssistente unavailable(AssistenteErrorCode code, String message, OffsetDateTime now) {

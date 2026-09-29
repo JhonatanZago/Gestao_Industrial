@@ -7,16 +7,19 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import com.metalurgica.sistemagestaoindustrial.observability.OperationalMetrics;
 
 @RestController
 @RequestMapping("/api/v1/empresas/{empresaId}/relatorios")
 public class RelatorioExecutivoResource {
     private final RelatorioExecutivoService service;
     private final ReportQueryFactory queryFactory;
+    private final OperationalMetrics metrics;
 
-    public RelatorioExecutivoResource(RelatorioExecutivoService service, ReportQueryFactory queryFactory) {
+    public RelatorioExecutivoResource(RelatorioExecutivoService service, ReportQueryFactory queryFactory, OperationalMetrics metrics) {
         this.service = service;
         this.queryFactory = queryFactory;
+        this.metrics = metrics;
     }
 
     @GetMapping("/executivo")
@@ -28,7 +31,12 @@ public class RelatorioExecutivoResource {
                                                 @RequestParam(required = false) Long setorId, @RequestParam(required = false) Long funcionarioId,
                                                 @RequestParam(required = false) Long pecaId, @RequestParam(required = false) Long maquinaId,
                                                 @RequestParam(required = false) Long turnoId, @RequestParam(required = false) Integer top) {
-        var query = queryFactory.create(inicio, fim, inicioAnterior, fimAnterior, setorId, funcionarioId, pecaId, maquinaId, turnoId, top);
-        return service.generate(empresaId, query);
+        long started = metrics.start();
+        try {
+            var query = queryFactory.create(inicio, fim, inicioAnterior, fimAnterior, setorId, funcionarioId, pecaId, maquinaId, turnoId, top);
+            var result = service.generate(empresaId, query);
+            metrics.report(OperationalMetrics.ReportFormatTag.JSON, OperationalMetrics.Outcome.SUCCESS, started);
+            return result;
+        } catch (RuntimeException exception) { metrics.report(OperationalMetrics.ReportFormatTag.JSON, OperationalMetrics.Outcome.FAILED, started); throw exception; }
     }
 }

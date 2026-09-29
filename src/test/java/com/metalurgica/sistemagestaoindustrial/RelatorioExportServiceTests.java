@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import com.metalurgica.sistemagestaoindustrial.dto.response.ProducaoAgrupadaResponse;
+import com.metalurgica.sistemagestaoindustrial.observability.OperationalMetrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,7 +43,10 @@ class RelatorioExportServiceTests {
     void rejectsExportAboveConfiguredRowLimit() {
         var limits = new ReportLimitsProperties();
         limits.setMaxRows(0);
-        assertThrows(IllegalArgumentException.class, () -> new RelatorioExportService(limits).csv(reportWithRows("Pintura")));
+        var registry = new SimpleMeterRegistry();
+        assertThrows(IllegalArgumentException.class, () -> new RelatorioExportService(limits, new OperationalMetrics(registry)).csv(reportWithRows("Pintura")));
+        assertEquals(1, registry.get("report.generation").tags("format", "csv", "outcome", "failed").counter().count());
+        assertEquals(1, registry.get("report.generation.failures").tag("format", "csv").counter().count());
     }
 
     @Test
