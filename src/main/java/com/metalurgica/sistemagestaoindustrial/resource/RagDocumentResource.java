@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/empresas/{empresaId}/assistente/documentos")
@@ -18,6 +19,12 @@ public class RagDocumentResource {
     public RagDocumentResource(RagDocumentService service, AssistenteSecurityContextResolver contextResolver) {
         this.service = service;
         this.contextResolver = contextResolver;
+    }
+
+    @GetMapping
+    public List<DocumentResponse> list(@PathVariable Long empresaId, Authentication authentication) {
+        var context = contextResolver.resolve(authentication, empresaId);
+        return service.list(context).stream().map(DocumentResponse::from).toList();
     }
 
     @PostMapping

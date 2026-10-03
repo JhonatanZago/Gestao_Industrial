@@ -1,0 +1,56 @@
+﻿{
+    "seed":  "homologacao-backend-v1-2026-09-29",
+    "companies":  [
+                      {
+                          "nome":  "MetalÃºrgica HomologaÃ§Ã£o",
+                          "codigo":  "HML-A"
+                      },
+                      {
+                          "nome":  "MetalÃºrgica Isolamento",
+                          "codigo":  "HML-B"
+                      }
+                  ],
+    "sectors":  [
+                    "Pintura",
+                    "Solda",
+                    "KTL",
+                    "Laser"
+                ],
+    "employees":  [
+                      "00147",
+                      "00148",
+                      "00149"
+                  ],
+    "parts":  [
+                  "PEC-A",
+                  "PEC-B",
+                  "PEC-C"
+              ],
+    "machines":  [
+                     "PINT-01",
+                     "SOLDA-01",
+                     "LASER-01"
+                 ],
+    "official":  {
+                     "current":  {
+                                     "production":  10000,
+                                     "grossMinutes":  600,
+                                     "stoppageMinutes":  60,
+                                     "productiveMinutes":  540,
+                                     "goal":  11000,
+                                     "industrialValue":  8500
+                                 },
+                     "previous":  {
+                                      "production":  8000,
+                                      "stoppageMinutes":  80,
+                                      "industrialValue":  7000
+                                  },
+                     "expected":  {
+                                      "productionGrowthPercent":  25,
+                                      "stoppageReductionPercent":  25,
+                                      "goalAchievementPercent":  90.91,
+                                      "stoppagePercent":  10,
+                                      "industrialValueGrowthPercent":  21.43
+                                  }
+                 }
+}

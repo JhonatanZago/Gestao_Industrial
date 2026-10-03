@@ -30,4 +30,11 @@ class RagDocumentTests {
         assertEquals("manual", validator.validateAndNormalize("manual.txt", "text/plain", "manual".getBytes(StandardCharsets.UTF_8)));
         assertThrows(RuntimeException.class, () -> validator.validateAndNormalize("manual.txt", "text/plain", "<script>x</script>".getBytes(StandardCharsets.UTF_8)));
     }
+
+    @Test
+    void rejeitaPathTraversalNoNomeDoDocumento() {
+        var validator = new DocumentContentValidator(new AiProperties());
+        assertThrows(RuntimeException.class, () -> validator.validateAndNormalize("../manual.txt", "text/plain", "manual".getBytes(StandardCharsets.UTF_8)));
+        assertThrows(RuntimeException.class, () -> validator.validateAndNormalize("sub\\manual.txt", "text/plain", "manual".getBytes(StandardCharsets.UTF_8)));
+    }
 }

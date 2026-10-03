@@ -40,11 +40,31 @@ class SecurityFilterChainIntegrationTests {
     }
 
     @Test
+    void deniesUnclassifiedApiRouteWithoutInvokingBusinessCode() throws Exception {
+        mvc.perform(get("/api/v1/nao-classificada"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
     void acceptsCorsPreflightOnlyForConfiguredOrigin() throws Exception {
         mvc.perform(options("/api/v1/auth/login")
                 .header(HttpHeaders.ORIGIN, "http://localhost:4200")
                 .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                    org.hamcrest.Matchers.containsString(HttpHeaders.CONTENT_DISPOSITION)));
+    }
+
+    @Test
+    void emitsExplicitSecurityHeaders() throws Exception {
+        mvc.perform(options("/api/v1/auth/login")
+                .header(HttpHeaders.ORIGIN, "http://localhost:4200")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
+            .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+            .andExpect(header().string("Referrer-Policy", "no-referrer"))
+            .andExpect(header().string("X-Frame-Options", "DENY"))
+            .andExpect(header().string("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"));
     }
 
     @Test

@@ -33,6 +33,23 @@ public class AnalyticsResource {
         } catch (RuntimeException exception) { metrics.dashboard(OperationalMetrics.Outcome.FAILED, started); throw exception; }
     }
 
+    @GetMapping("/dashboard")
+    public DashboardCoreResponse dashboard(@PathVariable Long empresaId,
+                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime inicio,
+                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime fim,
+                                           Filters filters) {
+        return service.coreDashboard(empresaId, filters.query(inicio, fim));
+    }
+
+    @GetMapping("/dashboard/setor/{setorId}")
+    public DashboardCoreResponse sectorDashboard(@PathVariable Long empresaId, @PathVariable Long setorId,
+                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime inicio,
+                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime fim,
+                                                 Filters filters) {
+        return service.coreDashboard(empresaId, new AnalyticsQuery(inicio, fim, setorId,
+                filters.funcionarioId(), filters.pecaId(), filters.maquinaId(), filters.turnoId()));
+    }
+
     @GetMapping("/setores")
     public Page<ProducaoAgrupadaResponse> sectors(@PathVariable Long empresaId, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime inicio, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) @RequestParam LocalDateTime fim, Filters filters, @PageableDefault(size = 20) Pageable pageable) {
         return service.grouped(empresaId, filters.query(inicio, fim), Dimension.SETOR, pageable);

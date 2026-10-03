@@ -106,6 +106,16 @@ Os resultados mantêm moeda e tipo explícitos e nunca somam moedas diferentes. 
 - Flyway para migrations
 - JUnit 5, Mockito e MockMvc
 
+## Homologação e documentação
+
+- Homologação Backend V1: docs/HOMOLOGACAO_BACKEND_V1.md
+- Arquitetura: docs/ARQUITETURA_BACKEND.md
+- Banco: docs/BANCO_DE_DADOS.md
+- Execução e desenvolvimento: docs/EXECUTAR_PROJETO.md e docs/DESENVOLVIMENTO.md
+- Deploy e operação: docs/DEPLOY_BACKEND.md e docs/OPERACAO_BACKEND.md
+- Segurança e performance: docs/SECURITY_HARDENING.md e docs/PERFORMANCE_BACKEND.md
+- IA/RAG e importação: docs/ASSISTENTE_IA_RAG.md e docs/IMPORTACAO_EXCEL.md
+
 ## Executar
 
 Configure PostgreSQL e, se necessário, as variáveis `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`. Os valores padrão apontam para `localhost:5432/sistema_gestao_industrial`, usuário `postgres` e senha `postgres`.

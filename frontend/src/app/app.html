@@ -1,43 +1,716 @@
 @if (!isLoggedIn()) {
   <main class="login-page">
-    <section class="login-visual"><div class="brand-mark">M</div><p class="eyebrow">METALURGICA ERP</p><h1>Gest&atilde;o e intelig&ecirc;ncia<br /><span>de produ&ccedil;&atilde;o.</span></h1><p class="muted">Uma vis&atilde;o precisa para decis&otilde;es que movem a opera&ccedil;&atilde;o.</p></section>
-    <section class="login-panel"><div class="login-card"><p class="eyebrow">ACESSO SEGURO</p><h2>Bem-vindo de volta</h2><p class="muted">Entre para acompanhar sua opera&ccedil;&atilde;o.</p><form (ngSubmit)="submitLogin()" #loginForm="ngForm"><label for="username">E-mail</label><input id="username" name="username" type="email" [(ngModel)]="login.username" required /><label for="password">Senha</label><input id="password" name="password" type="password" [(ngModel)]="login.password" required /><button class="primary-button full" [disabled]="loginForm.invalid || loading()">{{ loading() ? 'ENTRANDO...' : 'ENTRAR NO SISTEMA' }}</button></form>@if (error()) { <div class="form-error" role="alert">{{ error() }}</div> }</div></section>
+    <section class="login-visual">
+      <div class="brand-mark">M</div>
+      <p class="eyebrow">METALURGICA ERP</p>
+      <h1>Gestão e inteligência<br /><span>de produção.</span></h1>
+      <p class="muted">Uma visão precisa para decisões que movem a operação.</p>
+    </section>
+    <section class="login-panel">
+      <div class="login-card">
+        <p class="eyebrow">ACESSO SEGURO</p>
+        <h2>Bem-vindo de volta</h2>
+        <p class="muted">Entre para acompanhar sua operação.</p>
+        <form (ngSubmit)="submitLogin()" #loginForm="ngForm">
+          <label for="username">E-mail</label
+          ><input
+            id="username"
+            name="username"
+            type="email"
+            [(ngModel)]="login.username"
+            required
+          /><label for="password">Senha</label
+          ><input
+            id="password"
+            name="password"
+            type="password"
+            [(ngModel)]="login.password"
+            required
+          /><button class="primary-button full" [disabled]="loginForm.invalid || loading()">
+            {{ loading() ? 'ENTRANDO...' : 'ENTRAR NO SISTEMA' }}
+          </button>
+        </form>
+        @if (error()) {
+          <div class="form-error" role="alert">{{ error() }}</div>
+        }
+      </div>
+    </section>
   </main>
 } @else {
   <div class="app-frame">
-    @if (mobileOpen()) { <button class="mobile-backdrop" aria-label="Fechar menu" (click)="mobileOpen.set(false)"></button> }
+    @if (mobileOpen()) {
+      <button
+        class="mobile-backdrop"
+        aria-label="Fechar menu"
+        (click)="mobileOpen.set(false)"
+      ></button>
+    }
     <aside class="sidebar" [class.mobile-open]="mobileOpen()">
-      <div class="brand"><span class="brand-mark small"><ui-icon name="sectors" /></span><div class="brand-copy"><strong>METAL&Uacute;RGICA</strong><span>SISTEMA DE PRODU&Ccedil;&Atilde;O</span></div></div>
-      <nav aria-label="Navega&ccedil;&atilde;o principal"><button *ngFor="let item of visibleMenu(); trackBy: trackMenu" type="button" [class.active]="activeView() === item.key" [attr.aria-current]="activeView() === item.key ? 'page' : null" (click)="selectView(item.key)"><span class="nav-icon"><ui-icon [name]="item.icon" /></span><span class="nav-label">{{ item.label }}</span></button></nav>
-      <div class="sidebar-account"><span class="account-avatar">U</span><span class="nav-label"><b>Usu&aacute;rio</b><small>Sess&atilde;o autorizada</small></span><button type="button" class="sidebar-logout" aria-label="Sair" (click)="logout()"><ui-icon name="logout" /></button></div><div class="sidebar-footer"><span class="status-dot"></span><span class="nav-label">Backend operacional</span></div>
+      <div class="brand">
+        <span class="brand-mark small"><ui-icon name="brand"></ui-icon></span>
+        <div class="brand-copy"><strong>METALÚRGICA</strong><span>SISTEMA DE PRODUÇÃO</span></div>
+      </div>
+      <nav class="sidebar-nav" aria-label="Navegação principal">
+        @for (item of visibleMenu(); track item.key) {
+          <button
+            type="button"
+            [class.active]="activeView() === item.key"
+            [attr.aria-current]="activeView() === item.key ? 'page' : null"
+            (click)="selectView(item.key)"
+          >
+            <span class="nav-icon"><ui-icon [name]="item.icon"></ui-icon></span
+            ><span class="nav-label">{{ item.label }}</span>
+          </button>
+        }
+      </nav>
+      <div class="sidebar-account">
+        <span class="account-avatar">U</span
+        ><span class="nav-label"><b>Usuário</b><small>Sessão autorizada</small></span
+        ><button type="button" class="sidebar-logout" aria-label="Sair" (click)="logout()">
+          <ui-icon name="logout"></ui-icon>
+        </button>
+      </div>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span><span class="nav-label">Backend operacional</span>
+      </div>
     </aside>
     <main class="workspace">
-      <header class="topbar"><button class="mobile-menu icon-button" aria-label="Abrir menu" (click)="mobileOpen.set(true)"><ui-icon name="menu" /></button><div class="context"><span>METAL&Uacute;RGICA</span><strong>{{ title() }}</strong></div><div class="top-actions"><span class="period-chip">{{ selectedPeriod() }}</span><button class="icon-button" aria-label="Sair" (click)="logout()"><ui-icon name="logout" /></button></div></header>
-      <div class="page-content">
-        <div class="page-heading"><div><p class="eyebrow">CENTRO DE CONTROLE</p><h1>{{ title() }}</h1><p class="muted">{{ subtitle() }}</p></div><button class="secondary-button" type="button" (click)="refreshDashboard()" [disabled]="loading()"><ui-icon name="refresh" />{{ refreshState() === 'ATUALIZANDO' ? 'Atualizando' : refreshState() === 'ATUALIZADO' ? 'Atualizado' : 'Atualizar' }}</button></div>
+      <header class="dashboard-header">
+        <div class="header-title">
+          <span class="header-icon"><ui-icon [name]="headerIcon()"></ui-icon></span>
+          <div>
+            <h1>{{ title() }}</h1>
+            <p>{{ subtitle() }}</p>
+          </div>
+        </div>
+        @if (activeView() !== 'importacoes') {
+        <div class="header-actions">
+          <div class="period-control">
+            <label for="period">Período</label
+            ><select
+              id="period"
+              [ngModel]="selectedPeriod()"
+              (ngModelChange)="selectPeriod($event)"
+              [disabled]="viewLoading()"
+            >
+              <option *ngFor="let period of periodOptions" [value]="period">{{ period }}</option>
+            </select>
+          </div>
+          <button
+            class="refresh-button"
+            type="button"
+            (click)="refreshCurrentView()"
+            [disabled]="viewLoading()"
+          >
+            <ui-icon name="refresh"></ui-icon
+            >{{
+              refreshState() === 'ATUALIZANDO'
+                ? 'Atualizando'
+                : refreshState() === 'ATUALIZADO'
+                  ? 'Atualizado'
+                  : 'Atualizar'
+            }}
+          </button>
+        </div>
+        }
+      </header>
+      <div class="dashboard-content">
         @if (activeView() === 'dashboard') {
-          <section class="filter-bar"><div><label for="period">Per&iacute;odo</label><select id="period" [ngModel]="selectedPeriod()" (ngModelChange)="selectPeriod($event)"><option *ngFor="let period of periodOptions" [value]="period">{{ period }}</option></select></div><span class="filter-status" role="status">{{ apiStatus() }}</span></section>
-          @if (loading() && !coreDashboard()) { <section class="surface state"><span class="spinner"></span><strong>Carregando dados reais...</strong></section> }
-          @else if (dashboardError()) { <section class="surface state error-state" role="alert"><strong>N&atilde;o foi poss&iacute;vel carregar os dados</strong><span>{{ dashboardError() }}</span><button class="secondary-button" type="button" (click)="refreshDashboard()">Tentar novamente</button></section> }
-          @else if (!hasDashboardData()) { <section class="surface state"><strong>Sem dados para este per&iacute;odo</strong><span>Importe uma planilha ou escolha outro per&iacute;odo para consultar a opera&ccedil;&atilde;o.</span></section> }
-          @else {
-            <section class="stats-grid">@for (stat of stats(); track stat.label) { <article class="stat-card"><div class="stat-top"><span>{{ stat.label }}</span><span class="stat-icon"><ui-icon [name]="stat.icon" /></span></div><strong>{{ stat.value }}</strong><small>{{ stat.unit }}</small></article> }</section>
-            <section class="dashboard-grid">
-              <article class="surface chart-panel"><div class="surface-heading"><div><h2>Evolu&ccedil;&atilde;o da produ&ccedil;&atilde;o</h2><p>Dados reais do per&iacute;odo selecionado</p></div><div class="chart-heading-actions"><div class="chart-tabs" role="group" aria-label="Granularidade"><button class="active" type="button">Dia</button><button type="button">Semana</button><button type="button">M&ecirc;s</button></div><span class="legend"><i></i>Produ&ccedil;&atilde;o</span></div></div><ui-line-chart [points]="coreDashboard()?.evolucao ?? []" label="Evolu&ccedil;&atilde;o da produ&ccedil;&atilde;o"></ui-line-chart>@if (!coreDashboard()?.evolucao?.length) { <p class="panel-note">S&eacute;rie temporal indispon&iacute;vel para este contrato.</p> }</article>
-              <article class="surface"><div class="surface-heading"><div><h2>Produ&ccedil;&atilde;o por setor</h2><p>Ordenado por quantidade real</p></div><button class="text-button" type="button" (click)="selectView('setores')">Ver todos <ui-icon name="arrow" /></button></div><div class="sector-list">@for (sector of topSectors(); track sector.id ?? sector.codigo) { <button type="button" class="sector-row" (click)="loadSectorDashboard(sector)"><span class="sector-main"><span class="sector-dot emerald"></span><span><b>{{ sector.nome || sector.codigo || '-' }}</b><small>{{ formatNumber(sector.quantidadeProduzida) }} pe&ccedil;as</small></span></span><span class="sector-share">{{ sectorShare(sector.quantidadeProduzida) }}%</span></button><div class="progress"><span class="emerald" [style.width.%]="sectorShare(sector.quantidadeProduzida)"></span></div> } @empty { <p class="panel-note">Nenhum setor com dados.</p> }</div></article>
+          @if (loading() && !coreDashboard()) {
+            <section class="dashboard-panel state">
+              <span class="spinner"></span><strong>Carregando dados reais...</strong>
             </section>
-            <section class="bottom-grid"><article class="surface"><div class="surface-heading"><div><h2>Produ&ccedil;&atilde;o por funcion&aacute;rio <small>(Top 5)</small></h2><button class="text-button" type="button" (click)="selectView('setores')">Ver todos</button></div><span class="panel-icon"><ui-icon name="people" /></span></div><div class="ranking-list">@for (employee of topEmployees(); track employee.codigo ?? employee.id; let position = $index) { <div class="ranking-row"><span class="rank-number">{{ position + 1 }}</span><span><b>{{ employee.codigo || '-' }}</b><small>{{ employee.nome || 'C&oacute;digo operacional' }}</small></span><strong>{{ formatNumber(employee.quantidadeProduzida) }}</strong><span class="mini-progress"><i [style.width.%]="sectorShare(employee.quantidadeProduzida)"></i></span></div> } @empty { <p class="panel-note">Ranking indispon&iacute;vel no payload atual.</p> }</div></article><article class="surface"><div class="surface-heading"><div><h2>Principais pe&ccedil;as <small>(Top 5)</small></h2><button class="text-button" type="button" (click)="selectView('setores')">Ver todos</button></div><span class="panel-icon"><ui-icon name="parts" /></span></div><div class="ranking-list">@for (part of topParts(); track part.codigo ?? part.id; let position = $index) { <div class="ranking-row"><span class="rank-number">{{ position + 1 }}</span><span><b>{{ part.codigo || '-' }}</b><small>{{ part.nome || 'C&oacute;digo operacional' }}</small></span><strong>{{ formatNumber(part.quantidadeProduzida) }}</strong><span class="mini-progress"><i [style.width.%]="sectorShare(part.quantidadeProduzida)"></i></span></div> } @empty { <p class="panel-note">Ranking indispon&iacute;vel no payload atual.</p> }</div></article><article class="surface period-summary"><div class="surface-heading"><div><h2>Resumo do per&iacute;odo</h2><p>M&eacute;tricas derivadas da evolu&ccedil;&atilde;o real</p></div><span class="panel-icon"><ui-icon name="report" /></span></div><dl><div><dt>Dias com produ&ccedil;&atilde;o</dt><dd>{{ formatNumber(periodSummary().days) }}</dd></div><div><dt>M&eacute;dia di&aacute;ria</dt><dd>{{ formatNumber(periodSummary().average) }} pe&ccedil;as</dd></div><div><dt>Maior produ&ccedil;&atilde;o</dt><dd>{{ formatNumber(periodSummary().maximum) }} pe&ccedil;as</dd></div><div><dt>Menor produ&ccedil;&atilde;o</dt><dd>{{ formatNumber(periodSummary().minimum) }} pe&ccedil;as</dd></div></dl></article></section>
-            <section class="final-grid"><article class="surface latest-panel"><div class="surface-heading"><div><h2>&Uacute;ltimas produ&ccedil;&otilde;es registradas</h2><p>Linhas individuais fornecidas pelo contrato de produ&ccedil;&atilde;o</p></div><button class="text-button" type="button" (click)="selectView('relatorios')">Ver todas</button></div><div class="table-shell"><div class="table-head"><span>Data</span><span>Funcion&aacute;rio</span><span>Pe&ccedil;a</span><span>Setor</span><span>Quantidade</span><span>Dura&ccedil;&atilde;o</span></div><div class="table-empty"><ui-icon name="report" /><span>O dashboard consolidado atual n&atilde;o fornece registros individuais para esta tabela.</span></div></div></article><article class="surface distribution-panel"><div class="surface-heading"><div><h2>Distribui&ccedil;&atilde;o da produ&ccedil;&atilde;o</h2><p>Percentuais calculados do total real</p></div></div><div class="distribution-content"><div class="donut" [style.background]="distributionGradient()"><span><b>{{ formatNumber(coreDashboard()?.quantidadeProduzida) }}</b><small>pe&ccedil;as</small></span></div><div class="distribution-legend">@for (item of distributionItems(); track item.sector.id ?? item.sector.codigo) { <span><i [style.background]="item.color"></i>{{ item.sector.nome || item.sector.codigo }} <b>{{ item.percent }}%</b></span> } @empty { <p class="panel-note">Distribui&ccedil;&atilde;o indispon&iacute;vel.</p> }</div></div></article></section>
+          } @else if (dashboardError()) {
+            <section class="dashboard-panel state" role="alert">
+              <strong>Não foi possível carregar os dados</strong><span>{{ dashboardError() }}</span
+              ><button class="secondary-button" type="button" (click)="refreshDashboard()">
+                Tentar novamente
+              </button>
+            </section>
+          } @else if (!hasDashboardData()) {
+            <section class="dashboard-panel state">
+              <strong>Sem dados para este período</strong
+              ><span>Importe uma planilha ou escolha outro período.</span>
+            </section>
+          } @else {
+            <section class="kpi-grid">
+              @for (stat of stats(); track stat.label; let index = $index) {
+                <article class="kpi-card" [class]="'kpi-' + index">
+                  <div class="kpi-heading">
+                    <span>{{ stat.label }}</span
+                    ><span class="kpi-icon"><ui-icon [name]="stat.icon"></ui-icon></span>
+                  </div>
+                  <strong>{{ stat.value }}</strong
+                  ><small>{{ stat.unit }}</small
+                  ><span class="kpi-decoration" aria-hidden="true"
+                    ><ui-icon [name]="stat.icon"></ui-icon
+                  ></span>
+                </article>
+              }
+            </section>
+            <section class="main-grid">
+              <article class="dashboard-panel trend-panel">
+                <header class="panel-header">
+                  <div class="panel-title">
+                    <span class="panel-title-icon panel-title-icon--green"
+                      ><ui-icon name="production"></ui-icon
+                    ></span>
+                    <div>
+                      <h2>Evolução da produção</h2>
+                      <p>Dados reais do período selecionado</p>
+                    </div>
+                  </div>
+                  <div class="trend-controls">
+                    <div class="segmented-control">
+                      <button class="active" type="button">Dia</button
+                      ><button type="button">Semana</button><button type="button">Mês</button>
+                    </div>
+                    <span class="chart-legend"><i></i>Produção</span>
+                  </div>
+                </header>
+                <ui-line-chart
+                  [points]="coreDashboard()?.evolucao ?? []"
+                  label="Evolução da produção"
+                ></ui-line-chart>
+              </article>
+              <article class="dashboard-panel sector-panel">
+                <header class="panel-header">
+                  <div class="panel-title">
+                    <span class="panel-title-icon panel-title-icon--green"
+                      ><ui-icon name="sectors"></ui-icon
+                    ></span>
+                    <div>
+                      <h2>Produção por setor</h2>
+                      <p>Ordenado por quantidade real</p>
+                    </div>
+                  </div>
+                  <button class="panel-link" type="button" (click)="selectView('setores')">
+                    Ver todos <ui-icon name="arrow"></ui-icon>
+                  </button>
+                </header>
+                <div class="sector-list">
+                  @for (
+                    sector of topSectors();
+                    track sector.id ?? sector.codigo;
+                    let index = $index
+                  ) {
+                    <button class="sector-item" type="button" (click)="loadSectorDashboard(sector)">
+                      <span class="sector-name"
+                        ><i [class]="'sector-dot sector-color-' + index"></i
+                        ><span
+                          ><b>{{ sector.nome || sector.codigo || '-' }}</b
+                          ><small>{{ formatNumber(sector.quantidadeProduzida) }} peças</small></span
+                        ></span
+                      ><strong>{{ sectorShare(sector.quantidadeProduzida) }}%</strong>
+                    </button>
+                    <div class="sector-progress">
+                      <span
+                        [class]="'sector-fill sector-color-' + index"
+                        [style.width.%]="sectorShare(sector.quantidadeProduzida)"
+                      ></span>
+                    </div>
+                  } @empty {
+                    <p class="panel-note">Nenhum setor com dados.</p>
+                  }
+                </div>
+              </article>
+            </section>
+            <section class="secondary-grid">
+              <article class="dashboard-panel ranking-panel">
+                <header class="panel-header">
+                  <div class="panel-title">
+                    <span class="panel-title-icon panel-title-icon--green"
+                      ><ui-icon name="people"></ui-icon
+                    ></span>
+                    <div>
+                      <h2>Produção por funcionário <small>(Top 5)</small></h2>
+                      <button class="panel-link" type="button" (click)="selectView('setores')">
+                        Ver todos <ui-icon name="arrow"></ui-icon>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="ranking-list">
+                  @for (
+                    employee of topEmployees();
+                    track employee.codigo ?? employee.id;
+                    let position = $index
+                  ) {
+                    <div class="ranking-item">
+                      <span class="rank-number">{{ position + 1 }}</span
+                      ><span class="rank-label"
+                        ><b>{{ employee.codigo || '-' }}</b
+                        ><small>{{ employee.nome || 'Código operacional' }}</small></span
+                      ><strong>{{ formatNumber(employee.quantidadeProduzida) }}</strong
+                      ><span class="ranking-bar"
+                        ><i [style.width.%]="rankingShare(employee.quantidadeProduzida, topEmployees())"></i
+                      ></span>
+                    </div>
+                  } @empty {
+                    <p class="panel-note">Ranking indisponível no payload atual.</p>
+                  }
+                </div>
+              </article>
+              <article class="dashboard-panel ranking-panel">
+                <header class="panel-header">
+                  <div class="panel-title">
+                    <span class="panel-title-icon panel-title-icon--blue"
+                      ><ui-icon name="parts"></ui-icon
+                    ></span>
+                    <div>
+                      <h2>Principais peças <small>(Top 5)</small></h2>
+                      <button class="panel-link" type="button" (click)="selectView('setores')">
+                        Ver todos <ui-icon name="arrow"></ui-icon>
+                      </button>
+                    </div>
+                  </div>
+                </header>
+                <div class="ranking-list">
+                  @for (part of topParts(); track part.codigo ?? part.id; let position = $index) {
+                    <div class="ranking-item">
+                      <span class="rank-number">{{ position + 1 }}</span
+                      ><span class="rank-label"
+                        ><b>{{ part.codigo || '-' }}</b
+                        ><small>{{ part.nome || 'Código operacional' }}</small></span
+                      ><strong>{{ formatNumber(part.quantidadeProduzida) }}</strong
+                      ><span class="ranking-bar"
+                        ><i [style.width.%]="rankingShare(part.quantidadeProduzida, topParts())"></i
+                      ></span>
+                    </div>
+                  } @empty {
+                    <p class="panel-note">Ranking indisponível no payload atual.</p>
+                  }
+                </div>
+              </article>
+              <article class="dashboard-panel summary-panel">
+                <header class="panel-header">
+                  <div class="panel-title">
+                    <span class="panel-title-icon panel-title-icon--green"
+                      ><ui-icon name="report"></ui-icon
+                    ></span>
+                    <div>
+                      <h2>Resumo do período</h2>
+                      <p>Métricas derivadas da evolução real</p>
+                    </div>
+                  </div>
+                </header>
+                <dl>
+                  <div>
+                    <dt>Dias com produção</dt>
+                    <dd>{{ formatNumber(periodSummary().days) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Média diária</dt>
+                    <dd>{{ formatNumber(periodSummary().average) }} peças</dd>
+                  </div>
+                  <div>
+                    <dt>Maior produção</dt>
+                    <dd>{{ formatNumber(periodSummary().maximum) }} peças</dd>
+                  </div>
+                  <div>
+                    <dt>Menor produção</dt>
+                    <dd>{{ formatNumber(periodSummary().minimum) }} peças</dd>
+                  </div>
+                </dl>
+              </article>
+            </section>
+            <section class="bottom-grid">
+              <article class="dashboard-panel productions-panel">
+                <header class="panel-header">
+                  <div class="panel-title">
+                    <span class="panel-title-icon panel-title-icon--green"
+                      ><ui-icon name="report"></ui-icon
+                    ></span>
+                    <div>
+                      <h2>Últimas produções registradas</h2>
+                      <p>Linhas individuais fornecidas pelo contrato de produção</p>
+                    </div>
+                  </div>
+                  <button class="panel-link" type="button" (click)="selectView('relatorios')">
+                    Ver todas
+                  </button>
+                </header>
+                <div class="production-table">
+                  <div class="table-head">
+                    <span>Data</span><span>Funcionário</span><span>Peça</span><span>Setor</span
+                    ><span>Quantidade</span><span>Duração</span>
+                  </div>
+                  <div class="table-empty">
+                    <ui-icon name="report"></ui-icon
+                    ><span
+                      >O dashboard consolidado atual não fornece registros individuais para esta
+                      tabela.</span
+                    >
+                  </div>
+                </div>
+              </article>
+              <article class="dashboard-panel distribution-panel">
+                <header class="panel-header">
+                  <div class="panel-title">
+                    <span class="panel-title-icon panel-title-icon--green"
+                      ><ui-icon name="production"></ui-icon
+                    ></span>
+                    <div>
+                      <h2>Distribuição da produção</h2>
+                      <p>Percentuais calculados do total real</p>
+                    </div>
+                  </div>
+                </header>
+                <div class="distribution-content">
+                  <div class="donut" [style.background]="distributionGradient()">
+                    <span
+                      ><b>{{ formatNumber(coreDashboard()?.quantidadeProduzida) }}</b
+                      ><small>peças</small></span
+                    >
+                  </div>
+                  <div class="distribution-legend">
+                    @for (item of distributionItems(); track item.sector.id ?? item.sector.codigo) {
+                      <span
+                        ><i [style.background]="item.color"></i
+                        ><em>{{ item.sector.nome || item.sector.codigo }}</em
+                        ><b>{{ item.percent }}%</b></span
+                      >
+                    } @empty {
+                      <p class="panel-note">Distribuição indisponível.</p>
+                    }
+                  </div>
+                </div>
+              </article>
+            </section>
           }
         } @else if (activeView() === 'setores') {
-          <section class="surface"><div class="surface-heading"><div><h2>Setores</h2><p>Cards din&acirc;micos da API autorizada</p></div></div><div class="sector-cards">@for (sector of sectorRecords(); track sector.id) { <button type="button" class="sector-card" (click)="loadSectorDashboard(sector)"><span class="panel-icon"><ui-icon name="sectors" /></span><b>{{ sector.nome || sector.codigo }}</b><strong>{{ formatNumber(sector.quantidadeProduzida) }} pe&ccedil;as</strong><small>Ver detalhes <ui-icon name="arrow" /></small></button> } @empty { <p class="panel-note">Nenhum setor retornado pela API.</p> }</div></section>
-          @if (sectorDashboard(); as sector) { <section class="stats-grid sector-result">@for (item of [{label: 'Produ&ccedil;&atilde;o', value: formatNumber(sector.quantidadeProduzida)}, {label: 'Funcion&aacute;rios', value: formatNumber(sector.funcionariosEnvolvidos)}, {label: 'Pe&ccedil;as', value: formatNumber(sector.codigosPecaProduzidos)}, {label: 'Dura&ccedil;&atilde;o', value: formatNumber(sector.duracaoRegistradaMinutos) + ' min'}]; track item.label) { <article class="stat-card"><span>{{ item.label }}</span><strong>{{ item.value }}</strong></article> }</section><section class="dashboard-grid sector-result"><article class="surface"><div class="surface-heading"><div><h2>Evolu&ccedil;&atilde;o do setor</h2><p>Dados reais do per&iacute;odo</p></div></div><ui-line-chart [points]="sector.evolucao ?? []" label="Evolu&ccedil;&atilde;o do setor"></ui-line-chart></article><article class="surface"><div class="surface-heading"><div><h2>Produ&ccedil;&atilde;o contextual</h2><p>Funcion&aacute;rios e pe&ccedil;as retornados</p></div></div><div class="ranking-list">@for (row of (sector.porFuncionario ?? []).slice(0, 5); track row.codigo ?? row.id) { <div class="ranking-row"><span><b>{{ row.codigo || '-' }}</b><small>{{ row.nome || 'Funcion&aacute;rio' }}</small></span><strong>{{ formatNumber(row.quantidadeProduzida) }}</strong></div> } @empty { <p class="panel-note">Detalhamento indispon&iacute;vel.</p> }</div></article></section> }
-        } @else if (activeView() === 'relatorios') {
-          <section class="surface report-card"><div class="surface-heading"><div><h2>Relat&oacute;rios</h2><p>Resultado reconciliado com o dashboard</p></div></div><div class="report-filters"><label for="report-period">Per&iacute;odo<select id="report-period" [ngModel]="selectedPeriod()" (ngModelChange)="selectPeriod($event)"><option *ngFor="let period of periodOptions" [value]="period">{{ period }}</option></select></label><label for="report-sector">Setor<select id="report-sector" [ngModel]="reportSectorId()" (ngModelChange)="reportSectorId.set($event ? +$event : null)"><option [ngValue]="null">Todos</option><option *ngFor="let sector of sectorsOptions()" [ngValue]="sector.id">{{ sector.nome }}</option></select></label><button class="primary-button" type="button" (click)="loadReport()" [disabled]="loading()">Gerar relat&oacute;rio</button></div>@if (reportError()) { <p class="form-error" role="alert">{{ reportError() }}</p> } @if (report(); as result) { <div class="report-result"><p>{{ result.resumoOperacional || 'Relat&oacute;rio gerado pelo Backend V1.' }}</p><strong>Total: {{ formatNumber(result.dashboard?.quantidadeProduzida) }}</strong><span>Dura&ccedil;&atilde;o: {{ formatNumber(result.dashboard?.duracaoRegistradaMinutos) }} minutos</span></div> } @else if (!reportError()) { <p class="panel-note">Informe o per&iacute;odo e gere um relat&oacute;rio real.</p> }</section>
+          <div class="sectors-view">
+            @if (sectorsLoading() && !sectorOverviewDashboard()) {
+              <section class="sector-summary-grid" aria-label="Carregando resumo dos setores">
+                @for (placeholder of [1, 2, 3]; track placeholder) {
+                  <article class="sector-summary-card sector-skeleton-card">
+                    <span class="skeleton skeleton-icon"></span>
+                    <span class="skeleton skeleton-line skeleton-line--short"></span>
+                    <span class="skeleton skeleton-value"></span>
+                    <span class="skeleton skeleton-line"></span>
+                  </article>
+                }
+              </section>
+              <section class="sector-catalog-panel">
+                <div class="sector-section-heading">
+                  <div><h2>Setores de produção</h2><p>Carregando dados reais do período.</p></div>
+                </div>
+                <div class="sector-cards">
+                  @for (placeholder of [1, 2, 3]; track placeholder) {
+                    <article class="sector-card sector-card--skeleton">
+                      <span class="skeleton skeleton-icon skeleton-icon--large"></span>
+                      <span class="skeleton skeleton-line skeleton-line--medium"></span>
+                      <span class="skeleton skeleton-value"></span>
+                      <span class="skeleton skeleton-line"></span>
+                      <span class="skeleton skeleton-track"></span>
+                    </article>
+                  }
+                </div>
+              </section>
+            } @else if (sectorsError()) {
+              <section class="sector-state sector-state--error" role="alert">
+                <span class="sector-state-icon"><ui-icon name="sectors"></ui-icon></span>
+                <h2>Não foi possível carregar os setores.</h2>
+                <p>Verifique a conexão com o servidor e tente novamente.</p>
+                <button class="sector-state-action" type="button" (click)="loadSectorOverview()">Tentar novamente</button>
+              </section>
+            } @else {
+              <section class="sector-summary-grid" aria-label="Resumo dos setores">
+                @for (stat of sectorOverviewStats(); track stat.label) {
+                  <article [class]="'sector-summary-card sector-summary-card--' + stat.accent">
+                    <span class="sector-summary-icon"><ui-icon [name]="stat.icon"></ui-icon></span>
+                    <div><span>{{ stat.label }}</span><strong>{{ stat.value }}</strong><small>{{ stat.unit }}</small></div>
+                  </article>
+                }
+              </section>
+              <section class="sector-catalog-panel">
+                <div class="sector-section-heading">
+                  <div><h2>Setores de produção</h2><p>Selecione um setor para visualizar os detalhes.</p></div>
+                  <span>{{ sectorRecords().length }} {{ sectorRecords().length === 1 ? 'setor' : 'setores' }}</span>
+                </div>
+                @if (sectorRecords().length) {
+                  <div class="sector-cards">
+                    @for (sector of sectorRecords(); track sector.id) {
+                      <button
+                        class="sector-card"
+                        type="button"
+                        [style.--sector-accent]="sectorVisual(sector).color"
+                        [style.--sector-soft]="sectorVisual(sector).soft"
+                        (click)="loadSectorDashboard(sector)"
+                      >
+                        <span class="sector-card-icon"><ui-icon [name]="sectorVisual(sector).icon"></ui-icon></span>
+                        <span class="sector-card-code">{{ sector.codigo || 'Setor autorizado' }}</span>
+                        <strong class="sector-card-name">{{ sector.nome || sector.codigo }}</strong>
+                        <span class="sector-card-production"><b>{{ formatNumber(sector.quantidadeProduzida) }}</b> peças</span>
+                        <span class="sector-card-share">{{ sectorOverviewShare(sector.quantidadeProduzida) }}% da produção do período</span>
+                        <span class="sector-card-progress"><i [style.width.%]="sectorOverviewShare(sector.quantidadeProduzida)"></i></span>
+                        <span class="sector-card-operational" aria-label="Indicadores operacionais do setor">
+                          <span><small>Registros</small><b>{{ formatNumber(sector.quantidadeRegistros) }}</b></span>
+                          @if (sector.duracaoBrutaMinutos !== undefined) {
+                            <span><small>Duração registrada</small><b>{{ formatNumber(sector.duracaoBrutaMinutos) }} min</b></span>
+                          }
+                        </span>
+                        <span class="sector-card-cta">Ver detalhes <ui-icon name="arrow"></ui-icon></span>
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  <div class="sector-state sector-state--empty">
+                    <span class="sector-state-icon"><ui-icon name="sectors"></ui-icon></span>
+                    <h2>Nenhum setor encontrado</h2>
+                    <p>Ainda não existem dados de produção para o período selecionado.</p>
+                    <label class="sector-period-action" for="period">Alterar período</label>
+                  </div>
+                }
+              </section>
+              @if (sectorRecords().length) {
+                <section class="sector-comparison-panel" aria-labelledby="sector-comparison-title">
+                  <div class="sector-section-heading">
+                    <div><h2 id="sector-comparison-title">Comparativo operacional</h2><p>Indicadores reais consolidados por setor no período.</p></div>
+                  </div>
+                  <div class="sector-comparison-table">
+                    <div class="sector-comparison-head" aria-hidden="true"><span>Setor</span><span>Produção</span><span>Registros</span><span>Duração registrada</span></div>
+                    @for (sector of sectorRecords(); track sector.id) {
+                      <button
+                        class="sector-comparison-row"
+                        type="button"
+                        [style.--sector-accent]="sectorVisual(sector).color"
+                        (click)="loadSectorDashboard(sector)"
+                      >
+                        <span class="sector-comparison-name"><i></i><b>{{ sector.nome || sector.codigo }}</b><small>{{ sector.codigo }}</small></span>
+                        <span data-label="Produção"><b>{{ formatNumber(sector.quantidadeProduzida) }}</b><small>peças</small></span>
+                        <span data-label="Registros"><b>{{ formatNumber(sector.quantidadeRegistros) }}</b><small>lançamentos</small></span>
+                        <span data-label="Duração"><b>{{ formatNumber(sector.duracaoBrutaMinutos) }}</b><small>minutos</small></span>
+                      </button>
+                    }
+                  </div>
+                </section>
+              }
+            }
+          </div>
+        } @else if (activeView() === 'setor-detalhe') {
+          <div class="sector-detail-view">
+            <button class="sector-back" type="button" (click)="backToSectors()"><ui-icon name="arrow"></ui-icon> Voltar para setores</button>
+            @if (sectorDetailLoading() && !sectorDashboard()) {
+              <section class="sector-detail-kpis">
+                @for (placeholder of [1, 2, 3, 4]; track placeholder) {
+                  <article class="sector-detail-kpi sector-skeleton-card"><span class="skeleton skeleton-icon"></span><span class="skeleton skeleton-value"></span><span class="skeleton skeleton-line"></span></article>
+                }
+              </section>
+              <section class="sector-detail-loading-panel"><span class="skeleton skeleton-line skeleton-line--medium"></span><span class="skeleton skeleton-chart"></span></section>
+            } @else if (sectorDetailError()) {
+              <section class="sector-state sector-state--error" role="alert">
+                <span class="sector-state-icon"><ui-icon name="sectors"></ui-icon></span>
+                <h2>Não foi possível carregar os dados deste setor.</h2>
+                <p>Verifique a conexão com o servidor e tente novamente.</p>
+                <button class="sector-state-action" type="button" (click)="refreshCurrentView()">Tentar novamente</button>
+              </section>
+            } @else if (sectorDashboard(); as detail) {
+              <section class="sector-detail-kpis">
+                @for (stat of sectorDetailStats(); track stat.label) {
+                  <article [class]="'sector-detail-kpi sector-detail-kpi--' + stat.accent">
+                    <span class="sector-detail-kpi-icon"><ui-icon [name]="stat.icon"></ui-icon></span>
+                    <span>{{ stat.label }}</span><strong>{{ stat.value }}</strong><small>{{ stat.unit }}</small>
+                  </article>
+                }
+              </section>
+              <section class="sector-detail-chart dashboard-panel">
+                <header class="sector-detail-panel-heading">
+                  <div><span class="sector-detail-heading-icon"><ui-icon name="production"></ui-icon></span><div><h2>Evolução da produção</h2><p>Dados reais do setor no período selecionado</p></div></div>
+                  <span class="chart-legend"><i></i>Produção</span>
+                </header>
+                <ui-line-chart [points]="detail.evolucao ?? []" [label]="'Evolução da produção de ' + (selectedSector()?.nome || 'setor')"></ui-line-chart>
+              </section>
+              <section class="sector-detail-rankings">
+                <article class="dashboard-panel sector-detail-ranking">
+                  <header class="sector-detail-panel-heading"><div><span class="sector-detail-heading-icon"><ui-icon name="people"></ui-icon></span><div><h2>Top funcionários</h2><p>Produção real no setor</p></div></div></header>
+                  <div class="sector-detail-ranking-list">
+                    @for (employee of sectorEmployees(); track employee.id; let position = $index) {
+                      <button class="sector-detail-ranking-row" type="button" (click)="loadEmployeeDetail(employee)">
+                        <span class="sector-detail-rank">0{{ position + 1 }}</span><b>{{ employee.codigo || employee.nome }}</b><span class="sector-detail-rank-track"><i [style.width.%]="detailRankingShare(employee.quantidadeProduzida, sectorEmployees())"></i></span><strong>{{ formatNumber(employee.quantidadeProduzida) }}</strong><ui-icon name="arrow"></ui-icon>
+                      </button>
+                    } @empty { <p class="sector-detail-empty">Nenhum funcionário retornado para este período.</p> }
+                  </div>
+                </article>
+                <article class="dashboard-panel sector-detail-ranking sector-detail-ranking--parts">
+                  <header class="sector-detail-panel-heading"><div><span class="sector-detail-heading-icon"><ui-icon name="parts"></ui-icon></span><div><h2>Principais peças</h2><p>Produção real no setor</p></div></div></header>
+                  <div class="sector-detail-ranking-list">
+                    @for (part of sectorParts(); track part.id; let position = $index) {
+                      <div class="sector-detail-ranking-row sector-detail-ranking-row--static">
+                        <span class="sector-detail-rank">0{{ position + 1 }}</span><b>{{ part.codigo || part.nome }}</b><span class="sector-detail-rank-track"><i [style.width.%]="detailRankingShare(part.quantidadeProduzida, sectorParts())"></i></span><strong>{{ formatNumber(part.quantidadeProduzida) }}</strong>
+                      </div>
+                    } @empty { <p class="sector-detail-empty">Nenhuma peça retornada para este período.</p> }
+                  </div>
+                </article>
+              </section>
+              @if (employeeDetailLoading()) {
+                <section class="employee-detail-panel dashboard-panel"><span class="spinner"></span><strong>Carregando funcionário...</strong></section>
+              } @else if (employeeDetailError()) {
+                <section class="employee-detail-panel dashboard-panel" role="alert"><strong>{{ employeeDetailError() }}</strong><button type="button" (click)="closeEmployeeDetail()">Fechar</button></section>
+              } @else if (employeeDetail(); as employee) {
+                <section class="employee-detail-panel dashboard-panel">
+                  <header><div><span class="sector-detail-heading-icon"><ui-icon name="people"></ui-icon></span><div><small>Detalhes do funcionário</small><h2>{{ employee.codigo }} · {{ employee.nome || 'Funcionário' }}</h2></div></div><button type="button" (click)="closeEmployeeDetail()">Fechar</button></header>
+                  <div class="employee-detail-metrics"><span>Produção <b>{{ formatNumber(employee.quantidadeProduzida) }}</b></span><span>Registros <b>{{ formatNumber(employee.quantidadeRegistros) }}</b></span>@if (employee.duracaoBrutaMinutos !== undefined) { <span>Duração <b>{{ formatNumber(employee.duracaoBrutaMinutos) }} min</b></span> }</div>
+                </section>
+              }
+            }
+          </div>
         } @else if (activeView() === 'importacoes') {
-          <section class="surface import-card"><div class="steps" aria-label="Etapas da importa&ccedil;&atilde;o"><span class="current">1 Setor</span><span>2 Enviar arquivo</span><span>3 Validar</span><span>4 Concluir</span></div><label for="import-sector">Setor<select id="import-sector" [ngModel]="importSectorId()" (ngModelChange)="importSectorId.set(+$event)"><option [ngValue]="null">Selecione um setor</option><option *ngFor="let sector of sectorsOptions()" [ngValue]="sector.id">{{ sector.nome }}</option></select></label><label class="upload-box" for="import-file" (dragover)="$event.preventDefault()" (drop)="handleFileDrop($event)"><ui-icon name="import" /><strong>Arraste ou selecione o XLSX</strong><small>Use o modelo oficial com as seis colunas homologadas.</small><input id="import-file" type="file" accept=".xlsx" (change)="handleFile($event)" /></label>@if (selectedFile()) { <p class="file-name">{{ selectedFile() }}</p><p role="status" class="import-status">{{ importState() }} &mdash; {{ importStatus() }}</p><button class="primary-button" type="button" (click)="importSelectedFile()" [disabled]="importBusy() || importState() === 'DUPLICATE'">{{ importBusy() ? 'Processando...' : 'Validar e importar' }}</button> }</section>
-        } @else { <section class="surface module-placeholder"><span class="placeholder-icon"><ui-icon name="dashboard" /></span><h2>{{ title() }}</h2><p>Esta tela &eacute; acessada pelo drill-down contextual do dashboard.</p><button class="primary-button" type="button" (click)="selectView('dashboard')">Voltar ao dashboard</button></section> }
-        <footer class="support-footer"><span><i class="status-dot"></i> Sistema operacional</span><span>v1.0 &middot; API /api/v1</span></footer>
+          <section class="import-view" aria-labelledby="import-stage-title">
+            <ol class="import-stepper" aria-label="Etapas da importação">
+              <li [class.is-active]="importStep() === 1" [class.is-complete]="importStep() > 1">
+                <span class="import-step-number">@if (importStep() > 1) { <ui-icon name="check"></ui-icon> } @else { 01 }</span>
+                <span><b>Setor</b><small>Destino dos dados</small></span>
+              </li>
+              <li [class.is-active]="importStep() === 2" [class.is-complete]="importStep() > 2">
+                <span class="import-step-number">@if (importStep() > 2) { <ui-icon name="check"></ui-icon> } @else { 02 }</span>
+                <span><b>Arquivo</b><small>Planilha XLSX</small></span>
+              </li>
+              <li [class.is-active]="importStep() === 3" [class.is-complete]="importStep() > 3" [class.is-error]="importState() === 'VALIDATION_ERROR' || importState() === 'DUPLICATE'">
+                <span class="import-step-number">@if (importStep() > 3) { <ui-icon name="check"></ui-icon> } @else { 03 }</span>
+                <span><b>Validação</b><small>Regras do sistema</small></span>
+              </li>
+              <li [class.is-active]="importStep() === 4" [class.is-complete]="importState() === 'SUCCESS'">
+                <span class="import-step-number">@if (importState() === 'SUCCESS') { <ui-icon name="check"></ui-icon> } @else { 04 }</span>
+                <span><b>Concluído</b><small>Dados processados</small></span>
+              </li>
+            </ol>
+
+            @if (importStep() === 1) {
+              <article class="import-stage-panel import-sector-stage">
+                <header class="import-stage-heading">
+                  <span class="import-stage-icon"><ui-icon name="sectors"></ui-icon></span>
+                  <div><span>ETAPA 01</span><h2 id="import-stage-title">Selecione o setor</h2><p>Escolha para qual setor os dados da planilha serão importados.</p></div>
+                </header>
+                @if (importSectorLoading()) {
+                  <div class="import-sector-grid" aria-label="Carregando setores">
+                    @for (item of [1,2,3]; track item) { <div class="import-sector-card import-sector-card--skeleton"><span class="skeleton skeleton-icon"></span><span class="skeleton skeleton-line"></span><span class="skeleton skeleton-line skeleton-line--short"></span></div> }
+                  </div>
+                } @else if (importSectorError()) {
+                  <div class="import-feedback import-feedback--error" role="alert"><span><ui-icon name="warning"></ui-icon></span><div><strong>Não foi possível carregar os setores</strong><p>{{ importSectorError() }}</p><button type="button" (click)="loadSectors()">Tentar novamente</button></div></div>
+                } @else if (!sectorsOptions().length) {
+                  <div class="import-feedback"><span><ui-icon name="sectors"></ui-icon></span><div><strong>Nenhum setor disponível</strong><p>Seu usuário não possui setores ativos autorizados para importação.</p></div></div>
+                } @else {
+                  <div class="import-sector-grid">
+                    @for (sector of sectorsOptions(); track sector.id) {
+                      <button type="button" class="import-sector-card" [class.is-selected]="importSectorId() === sector.id" [attr.aria-pressed]="importSectorId() === sector.id" [style.--import-accent]="importSectorVisual(sector).color" [style.--import-soft]="importSectorVisual(sector).soft" (click)="selectImportSector(sector.id)">
+                        <span class="import-sector-icon"><ui-icon [name]="importSectorVisual(sector).icon"></ui-icon></span>
+                        <span class="import-sector-copy"><small>{{ sector.codigo || 'SETOR' }}</small><strong>{{ sector.nome }}</strong>@if (sector.descricao) { <em>{{ sector.descricao }}</em> }</span>
+                        <span class="import-sector-check">@if (importSectorId() === sector.id) { <ui-icon name="check"></ui-icon> }</span>
+                      </button>
+                    }
+                  </div>
+                  <div class="import-actions import-actions--end"><button class="import-primary" type="button" [disabled]="!selectedImportSector()" (click)="continueImport()">Continuar <ui-icon name="arrow"></ui-icon></button></div>
+                }
+              </article>
+            } @else if (importStep() === 2) {
+              <article class="import-stage-panel">
+                <header class="import-stage-heading">
+                  <span class="import-stage-icon"><ui-icon name="import"></ui-icon></span>
+                  <div><span>ETAPA 02</span><h2 id="import-stage-title">Envie a planilha</h2><p>O arquivo será validado antes de qualquer registro ser persistido.</p></div>
+                  @if (selectedImportSector(); as sector) { <span class="import-sector-context"><small>Setor selecionado</small><b>{{ sector.nome }}</b></span> }
+                </header>
+
+                @if (importState() === 'ERROR' && importStatus()) {
+                  <div class="import-inline-alert" role="alert"><ui-icon name="warning"></ui-icon><div><strong>Não foi possível usar este arquivo</strong><p>{{ importStatus() }}</p></div></div>
+                }
+
+                @if (!selectedFileObject()) {
+                  <label class="import-dropzone" [class.is-dragging]="importDragActive()" for="import-file" tabindex="0" (keydown.enter)="importFileInput.click()" (keydown.space)="$event.preventDefault(); importFileInput.click()" (dragenter)="handleImportDrag($event, true)" (dragover)="handleImportDrag($event, true)" (dragleave)="handleImportDrag($event, false)" (drop)="handleFileDrop($event)">
+                    <span class="import-drop-icon"><ui-icon name="import"></ui-icon></span>
+                    <strong>Arraste sua planilha aqui</strong>
+                    <p>ou clique para selecionar no computador</p>
+                    <small>Somente arquivos .XLSX · limite do servidor: 10 MB</small>
+                    <span class="import-select-button">Selecionar arquivo</span>
+                  </label>
+                  <input #importFileInput id="import-file" class="import-file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (click)="$any($event.target).value = null" (change)="handleFile($event)" />
+                } @else if (selectedFileObject(); as file) {
+                  <div class="import-file-card">
+                    <span class="import-file-icon"><ui-icon name="excel"></ui-icon></span>
+                    <div class="import-file-copy"><strong>{{ file.name }}</strong><span>{{ formatFileSize(file.size) }} · XLSX</span></div>
+                    <span class="import-file-ready"><i></i>{{ importStatus() }}</span>
+                    <button type="button" (click)="removeImportFile()"><ui-icon name="close"></ui-icon><span>Remover</span></button>
+                  </div>
+                }
+                <div class="import-actions"><button class="import-secondary" type="button" (click)="backToImportSector()">← Voltar</button><button class="import-primary" type="button" [disabled]="!selectedFileObject() || importBusy()" (click)="validateSelectedFile()">Validar arquivo <ui-icon name="arrow"></ui-icon></button></div>
+              </article>
+            } @else if (importStep() === 3) {
+              <article class="import-stage-panel" aria-live="polite">
+                @if (importState() === 'VALIDATING' || importState() === 'IMPORTING') {
+                  <div class="import-processing">
+                    <span class="import-processing-ring"><ui-icon [name]="importState() === 'IMPORTING' ? 'excel' : 'report'"></ui-icon></span>
+                    <span class="spinner"></span>
+                    <h2 id="import-stage-title">{{ importState() === 'IMPORTING' ? 'Importando dados...' : 'Validando planilha...' }}</h2>
+                    <p>{{ importState() === 'IMPORTING' ? 'Não feche esta página durante o processamento.' : 'O backend está verificando a estrutura e todas as regras de produção.' }}</p>
+                    <div class="import-progress"><i></i></div>
+                  </div>
+                } @else if (importState() === 'VALIDATED' && importValidation(); as validation) {
+                  <header class="import-result-heading import-result-heading--success"><span><ui-icon name="check"></ui-icon></span><div><small>VALIDAÇÃO CONCLUÍDA</small><h2 id="import-stage-title">Arquivo válido</h2><p>Os registros ainda não foram importados. Confirme para persistir os dados.</p></div></header>
+                  <div class="import-result-grid">
+                    <div><small>Setor</small><strong>{{ validation.setorNome || selectedImportSector()?.nome }}</strong></div>
+                    <div><small>Arquivo</small><strong>{{ validation.nomeArquivo || selectedFile() }}</strong></div>
+                    <div><small>Registros válidos</small><strong>{{ formatNumber(validation.linhasValidas) }}</strong></div>
+                    <div><small>Erros</small><strong>{{ formatNumber(validation.linhasInvalidas) }}</strong></div>
+                  </div>
+                  <div class="import-contract-note"><ui-icon name="refresh"></ui-icon><p>Ao confirmar, o backend revalida o mesmo arquivo e só então persiste todos os registros de forma atômica.</p></div>
+                  <div class="import-actions"><button class="import-secondary" type="button" (click)="removeImportFile()">← Trocar arquivo</button><button class="import-primary" type="button" (click)="openImportConfirmation()">Confirmar importação <ui-icon name="arrow"></ui-icon></button></div>
+                } @else if (importState() === 'VALIDATION_ERROR' && importValidation(); as validation) {
+                  <header class="import-result-heading import-result-heading--error"><span><ui-icon name="warning"></ui-icon></span><div><small>ARQUIVO COM PROBLEMAS</small><h2 id="import-stage-title">A planilha foi rejeitada</h2><p>{{ importStatus() }}</p></div></header>
+                  <div class="import-result-grid import-result-grid--error"><div><small>Erros críticos</small><strong>{{ formatNumber(validation.linhasInvalidas) }}</strong></div><div><small>Linhas válidas</small><strong>{{ formatNumber(validation.linhasValidas) }}</strong></div><div><small>Total analisado</small><strong>{{ formatNumber(validation.totalLinhas) }}</strong></div></div>
+                  @if (importLinesLoading()) { <div class="import-lines-loading"><span class="spinner"></span> Carregando detalhes...</div> }
+                  @if (importLineErrors().length) {
+                    <div class="import-error-table-wrap"><table class="import-error-table"><thead><tr><th>Linha</th><th>Referência</th><th>Código</th><th>Problema</th></tr></thead><tbody>@for (line of importLineErrors(); track line.id || line.numeroLinha) { <tr><td>{{ line.numeroLinha }}</td><td>{{ line.codigoFuncionario || line.codigoPeca || '—' }}</td><td>{{ line.codigoErro || 'VALIDAÇÃO' }}</td><td>{{ line.mensagem || 'Registro rejeitado.' }}</td></tr> }</tbody></table></div>
+                  }
+                  <div class="import-actions"><button class="import-secondary" type="button" (click)="removeImportFile()">← Trocar arquivo</button></div>
+                } @else if (importState() === 'DUPLICATE') {
+                  <div class="import-feedback import-feedback--warning"><span><ui-icon name="refresh"></ui-icon></span><div><strong id="import-stage-title">Arquivo já importado</strong><p>{{ importStatus() }}</p><button type="button" (click)="removeImportFile()">Escolher outra planilha</button></div></div>
+                }
+              </article>
+            } @else if (importState() === 'SUCCESS' && importResult(); as result) {
+              <article class="import-stage-panel import-success" aria-live="polite">
+                <span class="import-success-icon"><ui-icon name="check"></ui-icon></span>
+                <small>PROCESSAMENTO CONCLUÍDO</small>
+                <h2 id="import-stage-title">Importação concluída</h2>
+                <p>{{ importStatus() }}</p>
+                <div class="import-success-summary"><div><small>Setor</small><strong>{{ result.setorNome || selectedImportSector()?.nome }}</strong></div><div><small>Registros importados</small><strong>{{ formatNumber(result.linhasImportadas) }}</strong></div><div><small>Erros</small><strong>{{ formatNumber(result.linhasInvalidas) }}</strong></div></div>
+                <div class="import-success-actions"><button class="import-secondary" type="button" (click)="resetImport()">Importar outra planilha</button><button class="import-secondary" type="button" (click)="goToImportedSector()">Ver setor <ui-icon name="arrow"></ui-icon></button><button class="import-primary" type="button" (click)="goToDashboardAfterImport()">Ir para Visão Geral</button></div>
+              </article>
+            }
+
+            @if (importStep() < 4) {
+              <aside class="import-template-card"><span><ui-icon name="download"></ui-icon></span><div><strong>Precisa do modelo correto?</strong><p>Baixe a planilha padrão utilizada pelo sistema.</p></div><a href="/templates/PRODUCAO_PADRAO.xlsx" download="PRODUCAO_PADRAO.xlsx">Baixar modelo XLSX</a></aside>
+            }
+
+            @if (showImportConfirmation()) {
+              <div class="import-confirmation-backdrop" role="presentation" (click)="closeImportConfirmation()">
+                <section class="import-confirmation" role="dialog" aria-modal="true" aria-labelledby="import-confirm-title" (click)="$event.stopPropagation()">
+                  <span class="import-confirm-icon"><ui-icon name="excel"></ui-icon></span><h2 id="import-confirm-title">Confirmar importação</h2><p>Esta operação adicionará os registros validados ao sistema.</p>
+                  <dl><div><dt>Setor</dt><dd>{{ selectedImportSector()?.nome }}</dd></div><div><dt>Arquivo</dt><dd>{{ selectedFile() }}</dd></div><div><dt>Registros válidos</dt><dd>{{ formatNumber(importValidation()?.linhasValidas) }}</dd></div></dl>
+                  <div class="import-actions"><button class="import-secondary" type="button" (click)="closeImportConfirmation()">Cancelar</button><button class="import-primary" type="button" (click)="confirmImport()">Importar dados</button></div>
+                </section>
+              </div>
+            }
+          </section>
+        } @else if (activeView() === 'relatorios') {
+          <section class="dashboard-panel module-panel">
+            <h2>Relatórios</h2>
+            <p>Resultado reconciliado com o dashboard.</p>
+            <button class="primary-button" type="button" (click)="loadReport()">
+              Gerar relatório
+            </button>
+          </section>
+        } @else {
+          <section class="dashboard-panel module-panel">
+            <h2>{{ title() }}</h2>
+            <p>Esta tela é acessada pelo drill-down contextual do dashboard.</p>
+            <button class="primary-button" type="button" (click)="selectView('dashboard')">
+              Voltar ao dashboard
+            </button>
+          </section>
+        }
+        <footer class="support-footer">
+          <span><i class="status-dot"></i> Sistema operacional</span><span>v1.0 · API /api/v1</span>
+        </footer>
       </div>
     </main>
   </div>

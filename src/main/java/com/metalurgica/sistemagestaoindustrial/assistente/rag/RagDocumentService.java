@@ -45,12 +45,10 @@ public class RagDocumentService {
         this.auditoriaService = auditoriaService;
     }
 
-    @Transactional
     public AiDocument ingest(AssistenteSecurityContext context, String fileName, String contentType, byte[] bytes) {
         return ingest(context, null, fileName, contentType, bytes);
     }
 
-    @Transactional
     public AiDocument ingest(AssistenteSecurityContext context, Long sectorId, String fileName, String contentType, byte[] bytes) {
         requireDocumentPermission(context);
         if (sectorId != null && !context.canAccessSector(sectorId)) {
@@ -150,6 +148,13 @@ public class RagDocumentService {
             matches.addAll(vectorStore.search(vector, scoped, Math.max(1, limit)));
         }
         return matches.stream().limit(Math.max(1, limit)).toList();
+    }
+
+    public List<AiDocument> list(AssistenteSecurityContext context) {
+        requireDocumentPermission(context);
+        return documentRepository.findByEmpresaIdAndStatus(context.empresaId(), AiDocumentStatus.ACTIVE).stream()
+                .filter(document -> document.getSectorId() == null || context.canAccessSector(document.getSectorId()))
+                .toList();
     }
 
     private void deactivate(AiDocument previous) {

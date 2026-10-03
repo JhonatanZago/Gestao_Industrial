@@ -1,0 +1,69 @@
+{
+  "info": {
+    "name": "Sistema Gestão Industrial - Backend V1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "empresaId", "value": "1" },
+    { "key": "setorId", "value": "1" },
+    { "key": "token", "value": "" },
+    { "key": "inicio", "value": "2026-09-01T00:00:00" },
+    { "key": "fim", "value": "2026-09-30T23:59:59" }
+  ],
+  "item": [
+    {
+      "name": "Health readiness",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/actuator/health/readiness" }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"senha\": \"{{senha}}\"\n}" },
+        "url": "{{baseUrl}}/api/v1/auth/login"
+      }
+    },
+    {
+      "name": "Current user",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/v1/auth/me"
+      }
+    },
+    {
+      "name": "List sectors",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/v1/empresas/{{empresaId}}/setores?page=0&size=20"
+      }
+    },
+    {
+      "name": "Analytics summary",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/v1/empresas/{{empresaId}}/analytics/resumo?inicio={{inicio}}&fim={{fim}}"
+      }
+    },
+    {
+      "name": "Production report",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/v1/empresas/{{empresaId}}/relatorios/producao?inicio={{inicio}}&fim={{fim}}"
+      }
+    },
+    {
+      "name": "Assistant status",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/v1/empresas/{{empresaId}}/assistente/status"
+      }
+    }
+  ]
+}

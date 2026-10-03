@@ -70,6 +70,19 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
+    public com.metalurgica.sistemagestaoindustrial.dto.response.DashboardCoreResponse coreDashboard(Long empresaId, AnalyticsQuery query) {
+        var records = load(empresaId, query);
+        var metrics = metrics(records);
+        var sectors = groups(records, Dimension.SETOR, 1000);
+        var employees = groups(records, Dimension.FUNCIONARIO, 1000);
+        var parts = groups(records, Dimension.PECA, 1000);
+        return new com.metalurgica.sistemagestaoindustrial.dto.response.DashboardCoreResponse(
+                query.inicio(), query.fim(), metrics.quantidadeProduzida(), metrics.duracaoBrutaMinutos(),
+                sectors.size(), employees.size(), parts.size(), sectors, employees, parts,
+                timeSeries(empresaId, query, GranularidadeAnalitica.DIA));
+    }
+
+    @Transactional(readOnly = true)
     public Page<ProducaoAgrupadaResponse> grouped(Long empresaId, AnalyticsQuery query, Dimension dimension, Pageable pageable) {
         var records = load(empresaId, query);
         var groups = new LinkedHashMap<String, AnalyticsAggregate>();

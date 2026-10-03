@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
-@Profile("test")
+@Profile("test | local")
 public class InMemoryVectorStore implements VectorStorePort {
     private final List<VectorDocument> documents = new CopyOnWriteArrayList<>();
 

@@ -3,6 +3,7 @@ package com.metalurgica.sistemagestaoindustrial.resource;
 import com.metalurgica.sistemagestaoindustrial.dto.response.*;
 import com.metalurgica.sistemagestaoindustrial.report.ReportQueryFactory;
 import com.metalurgica.sistemagestaoindustrial.service.RelatoriosOperacionaisService;
+import com.metalurgica.sistemagestaoindustrial.service.RelatorioSimplificadoService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +13,17 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/v1/empresas/{empresaId}/relatorios")
 public class RelatoriosOperacionaisResource {
     private final RelatoriosOperacionaisService service;
+    private final RelatorioSimplificadoService simplified;
     private final ReportQueryFactory queryFactory;
 
-    public RelatoriosOperacionaisResource(RelatoriosOperacionaisService service, ReportQueryFactory queryFactory) { this.service = service; this.queryFactory = queryFactory; }
+    public RelatoriosOperacionaisResource(RelatoriosOperacionaisService service, RelatorioSimplificadoService simplified, ReportQueryFactory queryFactory) { this.service = service; this.simplified = simplified; this.queryFactory = queryFactory; }
+
+    @GetMapping("/simplificado")
+    public RelatorioSimplificadoResponse simplified(@PathVariable Long empresaId, @RequestParam LocalDateTime inicio, @RequestParam LocalDateTime fim,
+                                                    @RequestParam(required=false) Long setorId, @RequestParam(required=false) Long funcionarioId,
+                                                    @RequestParam(required=false) Long pecaId) {
+        return simplified.generate(empresaId, new com.metalurgica.sistemagestaoindustrial.analytics.AnalyticsQuery(inicio, fim, setorId, funcionarioId, pecaId, null, null));
+    }
 
     @GetMapping("/producao")
     public RelatorioProducaoResponse production(@PathVariable Long empresaId, @RequestParam LocalDateTime inicio, @RequestParam LocalDateTime fim,

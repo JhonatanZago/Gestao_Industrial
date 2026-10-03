@@ -1,0 +1,17 @@
+﻿{
+    "outputDirectory":  "C:\\Users\\jhona\\Desktop\\Cadastro-Usuario\\SistemaGestaoIndustrial\\tmp-homologacao-fixtures",
+    "generatedAt":  "2026-10-02T23:39:37.8090758Z",
+    "files":  [
+                  "dataset.json",
+                  "empty.xlsx",
+                  "importacao-e2e-2026-10-02.xlsx",
+                  "invalid-employee.xlsx",
+                  "invalid-format.txt",
+                  "invalid-part.xlsx",
+                  "invalid-quantity.xlsx",
+                  "invalid-time.xlsx",
+                  "manifest.json",
+                  "missing-column.xlsx",
+                  "valid-production.xlsx"
+              ]
+}

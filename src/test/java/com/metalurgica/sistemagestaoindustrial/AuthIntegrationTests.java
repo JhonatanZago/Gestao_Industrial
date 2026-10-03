@@ -71,6 +71,15 @@ class AuthIntegrationTests {
     }
 
     @Test
+    void rejectsInternalFieldsInClientPayload() throws Exception {
+        mvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + email + "\",\"senha\":\"SenhaSegura123\",\"empresaId\":999,\"permissoes\":[\"ADMIN\"]}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void usesGenericUnauthorizedResponseForUnknownAndWrongCredentials() throws Exception {
         mvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)

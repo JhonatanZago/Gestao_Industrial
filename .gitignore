@@ -46,3 +46,23 @@ Thumbs.db
 # Variáveis de ambiente
 .env
 .gradle-user-home-2/
+
+**/build/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+node_modules/
+dist/
+
+# IDE
+.idea/
+
+# Logs
+*.log
+.gradle-user-home-review/
+.gradle-user-home/
+.gradle/
+**/build/
+frontend/node_modules/
+frontend/dist/

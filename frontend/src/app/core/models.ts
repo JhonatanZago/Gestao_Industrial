@@ -19,7 +19,7 @@ export interface ProductionGroup {
   tempoProdutivoMinutos?: number;
 }
 
-export interface TemporalPoint { inicio?: string; fim?: string; quantidadeProduzida?: number; quantidadeRegistros?: number; }
+export interface TemporalPoint { periodo?: string; inicio?: string; fim?: string; quantidadeProduzida?: number; quantidadeRegistros?: number; }
 
 export interface CoreDashboard {
   inicio?: string;
@@ -36,6 +36,8 @@ export interface CoreDashboard {
 }
 
 export interface SimplifiedReport { dashboard?: CoreDashboard; resumoOperacional?: string; }
+
+export type ReportExportFormat = 'CSV' | 'XLSX';
 
 export interface EmployeeAnalytics {
   funcionarioId?: number;

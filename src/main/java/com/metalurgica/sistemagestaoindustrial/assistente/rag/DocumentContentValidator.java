@@ -19,7 +19,7 @@ public class DocumentContentValidator {
     }
 
     public String validateAndNormalize(String fileName, String contentType, byte[] bytes) {
-        if (fileName == null || !SAFE_NAME.matcher(fileName).matches() || fileName.contains("..")) {
+        if (fileName == null || fileName.contains("/") || fileName.contains("\\") || fileName.contains("..") || !SAFE_NAME.matcher(fileName).matches()) {
             throw new AiToolException(AssistenteErrorCode.AI_DOCUMENT_INVALID, "Nome de documento inválido.");
         }
         if (bytes == null || bytes.length == 0 || bytes.length > properties.getMaxDocumentBytes()) {

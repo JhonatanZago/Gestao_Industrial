@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
-@Profile("test")
+@Profile("test | local")
 public class FakeChatModelGateway implements ChatModelGateway {
     private final AtomicInteger calls = new AtomicInteger();
 

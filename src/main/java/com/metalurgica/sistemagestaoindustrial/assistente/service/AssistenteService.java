@@ -60,7 +60,6 @@ public class AssistenteService {
         this.clock = Clock.system(ZoneId.of(properties.getTimezone()));
     }
 
-    @Transactional(readOnly = true)
     public RespostaAssistente ask(Long empresaId, PerguntaAssistenteRequest request, Authentication authentication) {
         var started = System.nanoTime();
         var now = OffsetDateTime.now(clock);

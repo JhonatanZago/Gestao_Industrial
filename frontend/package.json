@@ -3,9 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "sync:template": "node scripts/sync-template.mjs",
+    "prestart": "npm run sync:template",
     "start": "ng serve",
+    "prebuild": "npm run sync:template",
     "build": "ng build",
     "e2e": "playwright test",
+    "pretest": "npm run sync:template",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

@@ -32,7 +32,7 @@ class AnalyticsIntegrationTests extends AuthenticatedIntegrationTest {
     @Autowired ResultadoLinhaImportacaoRepository resultadoImportacaoRepository;
 
     @BeforeEach
-    void clean() { resultadoImportacaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); producaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
+    void clean() { resultadoImportacaoRepository.deleteAll(); paradaRepository.deleteAll(); producaoRepository.deleteAll(); importacaoRepository.deleteAll(); motivoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
 
     @Test
     void calculaResumoAgrupamentoSerieEComparativo() throws Exception {
@@ -77,6 +77,25 @@ class AnalyticsIntegrationTests extends AuthenticatedIntegrationTest {
         var f = fixture();
         mvc.perform(get("/api/v1/empresas/" + f.empresa() + "/analytics/resumo?inicio=2026-09-27T00:00:00&fim=2026-09-26T00:00:00"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.message").value("O fim do período analítico deve ser posterior ou igual ao início."));
+    }
+
+    @Test
+    void entregaDashboardCoreComFiltrosEContagens() throws Exception {
+        var f = fixture();
+        createProduction(f, "200", "2026-09-26T08:00:00", "2026-09-26T09:00:00");
+        var period = "inicio=2026-09-26T00:00:00&fim=2026-09-26T23:59:59";
+        mvc.perform(get("/api/v1/empresas/" + f.empresa() + "/analytics/dashboard?" + period))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantidadeProduzida").value(200))
+                .andExpect(jsonPath("$.setoresComDados").value(1))
+                .andExpect(jsonPath("$.funcionariosEnvolvidos").value(1))
+                .andExpect(jsonPath("$.codigosPecaProduzidos").value(1))
+                .andExpect(jsonPath("$.porSetor[0].quantidadeProduzida").value(200));
+        mvc.perform(get("/api/v1/empresas/" + f.empresa() + "/analytics/dashboard/setor/" + f.setor() + "?" + period))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.quantidadeProduzida").value(200));
+        mvc.perform(get("/api/v1/empresas/" + f.empresa() + "/relatorios/simplificado?" + period))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.dashboard.quantidadeProduzida").value(200))
+                .andExpect(jsonPath("$.dashboard.porPeca[0].quantidadeProduzida").value(200));
     }
 
     @Test

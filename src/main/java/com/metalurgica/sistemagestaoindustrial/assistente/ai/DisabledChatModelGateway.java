@@ -1,11 +1,11 @@
 package com.metalurgica.sistemagestaoindustrial.assistente.ai;
 
 import com.metalurgica.sistemagestaoindustrial.assistente.AssistenteErrorCode;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnMissingBean(ChatModelGateway.class)
+@Profile("!test & !local")
 public class DisabledChatModelGateway implements ChatModelGateway {
     @Override
     public ChatModelResponse complete(ChatModelRequest request) {

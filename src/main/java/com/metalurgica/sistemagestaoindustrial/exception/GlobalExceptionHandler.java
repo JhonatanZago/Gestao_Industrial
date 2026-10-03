@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,6 +25,14 @@ import java.util.LinkedHashMap;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ErrorResponse> unreadable(HttpMessageNotReadableException ex, HttpServletRequest req) {
+        return response(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_ERROR, "Dados invÃ¡lidos.", req);
+    }
+    @ExceptionHandler(RateLimitExceededException.class)
+    ResponseEntity<ErrorResponse> rateLimited(RateLimitExceededException ex, HttpServletRequest req) {
+        return response(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.RATE_LIMITED, "Muitas tentativas. Tente novamente mais tarde.", req);
+    }
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ErrorResponse> accessDenied(AccessDeniedException ex, HttpServletRequest req) { return response(HttpStatus.FORBIDDEN, ErrorCode.ACCESS_DENIED, "Acesso negado.", req); }
     @ExceptionHandler(BadCredentialsException.class)

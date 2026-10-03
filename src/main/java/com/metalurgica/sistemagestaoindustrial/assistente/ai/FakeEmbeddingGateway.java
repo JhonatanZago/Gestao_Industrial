@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
-@Profile("test")
+@Profile("test | local")
 public class FakeEmbeddingGateway implements EmbeddingGateway {
     @Override
     public EmbeddingResponse embed(String text) {

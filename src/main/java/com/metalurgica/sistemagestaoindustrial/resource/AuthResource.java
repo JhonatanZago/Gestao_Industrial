@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import com.metalurgica.sistemagestaoindustrial.security.LoginRateLimiter;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -27,16 +28,20 @@ public class AuthResource {
     private final UsuarioService usuarioService;
     private final JwtTokenService tokenService;
     private final UsuarioSetorRepository usuarioSetorRepository;
+    private final LoginRateLimiter loginRateLimiter;
 
     public AuthResource(UsuarioService usuarioService, JwtTokenService tokenService,
-                        UsuarioSetorRepository usuarioSetorRepository) {
+                        UsuarioSetorRepository usuarioSetorRepository, LoginRateLimiter loginRateLimiter) {
         this.usuarioService = usuarioService;
         this.tokenService = tokenService;
         this.usuarioSetorRepository = usuarioSetorRepository;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
+                                               jakarta.servlet.http.HttpServletRequest httpRequest) {
+        loginRateLimiter.acquire(request.email(), httpRequest.getRemoteAddr());
         var user = usuarioService.authenticate(request.email(), request.senha());
         return ResponseEntity.ok(new LoginResponse(tokenService.issue(user), "Bearer", tokenService.getExpirationSeconds()));
     }
