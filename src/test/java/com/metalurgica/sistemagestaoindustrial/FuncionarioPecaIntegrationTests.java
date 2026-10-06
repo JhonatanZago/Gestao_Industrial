@@ -45,7 +45,7 @@ class FuncionarioPecaIntegrationTests extends AuthenticatedIntegrationTest {
     @Autowired ResultadoLinhaImportacaoRepository resultadoImportacaoRepository;
 
     @BeforeEach
-    void clean() { resultadoImportacaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); registroProducaoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
+    void clean() { resultadoImportacaoRepository.deleteAll(); registroProducaoRepository.deleteAll(); importacaoRepository.deleteAll(); paradaRepository.deleteAll(); motivoRepository.deleteAll(); maquinaRepository.deleteAll(); turnoRepository.deleteAll(); pecaRepository.deleteAll(); funcionarioRepository.deleteAll(); setorRepository.deleteAll(); usuarioRepository.deleteAll(); empresaRepository.deleteAll(); }
 
     @Test
     void preservesEmployeeCodeAndManagesLifecycle() throws Exception {

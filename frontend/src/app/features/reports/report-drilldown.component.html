@@ -1,0 +1,59 @@
+<main class="drilldown" [class.drilldown--parts]="isPartList || isPartDetail">
+  <nav class="breadcrumbs" aria-label="Você está em">
+    <button type="button" (click)="openReports()">Relatórios</button><span aria-hidden="true">/</span>
+    @if (isEmployeeDetail || isPartDetail) { <button type="button" (click)="openList()">{{ isEmployeeDetail ? 'Funcionários' : 'Peças' }}</button><span aria-hidden="true">/</span><span aria-current="page">{{ isEmployeeDetail ? (employee()?.codigo || employee()?.nome || 'Funcionário') : (detailEntity?.codigo || detailEntity?.nome || 'Peça') }}</span> }
+    @else { <span aria-current="page">{{ isEmployeeList ? 'Funcionários' : 'Peças' }}</span> }
+  </nav>
+  <header class="drilldown-heading">
+    <div><span class="drilldown-eyebrow">ANÁLISE DE PRODUÇÃO</span><h1>{{ title }}</h1><p>{{ isEmployeeList ? 'Análise detalhada da produção por funcionário.' : isEmployeeDetail ? 'Produção registrada e peças produzidas por este funcionário.' : isPartList ? 'Análise detalhada das peças produzidas.' : 'Produção, evolução e funcionários que produziram esta peça.' }}</p></div>
+    <div class="drilldown-context"><span>{{ period.label }}</span><span>{{ sectorLabel }}</span></div>
+  </header>
+
+  @if (state() === 'LOADING') {
+    <section class="drilldown-kpis" aria-label="Carregando indicadores" aria-live="polite">@for (item of [1,2,3,4]; track item) { <article class="drilldown-card skeleton-card"><i></i><i></i><b></b></article> }</section>
+    <section class="drilldown-panels"><article class="drilldown-panel"><i class="skeleton-line"></i><i class="skeleton-block"></i></article><article class="drilldown-panel"><i class="skeleton-line"></i><i class="skeleton-block"></i></article></section>
+  } @else if (state() === 'ERROR') {
+    <section class="drilldown-state" role="alert"><span class="state-icon"><ui-icon name="warning"></ui-icon></span><h2>Não foi possível carregar os dados</h2><p>{{ error() }}</p><button type="button" class="retry-button" (click)="load()">Tentar novamente</button></section>
+  } @else if (state() === 'EMPTY') {
+    <section class="drilldown-state"><span class="state-icon"><ui-icon [name]="isEmployeeList || isEmployeeDetail ? 'people' : 'parts'"></ui-icon></span><h2>{{ isEmployeeList || isEmployeeDetail ? 'Nenhum funcionário encontrado para este período.' : 'Nenhuma peça encontrada para este período.' }}</h2><p>Não existem dados para {{ period.label }}{{ sectorLabel ? ' em ' + sectorLabel : '' }}.</p><button type="button" class="retry-button" (click)="back()">Voltar</button></section>
+  } @else if (isEmployeeList || isPartList) {
+    <section class="drilldown-kpis">
+      <article class="drilldown-card"><span>{{ isEmployeeList ? 'Funcionários' : 'Peças' }}</span><strong>{{ fmt(entitiesCount) }}</strong><small>{{ isEmployeeList ? 'com produção no período' : 'com produção no período' }}</small></article>
+      <article class="drilldown-card"><span>Produção total</span><strong>{{ fmt(reportDashboard?.quantidadeProduzida) }}</strong><small>unidades produzidas</small></article>
+      <article class="drilldown-card"><span>{{ isEmployeeList ? 'Média por funcionário' : 'Média por peça' }}</span><strong>{{ fmtAverage(averageProduction) }}</strong><small>no período selecionado</small></article>
+      <article class="drilldown-card drilldown-card--accent"><span>{{ isEmployeeList ? 'Destaque' : 'Mais produzida' }}</span><strong class="leader-value">{{ leader?.codigo || leader?.nome || '—' }}</strong><small>{{ fmt(leader?.quantidadeProduzida) }} unidades</small></article>
+    </section>
+    <section class="drilldown-panels">
+      <article class="drilldown-panel"><header><div><span class="panel-accent-icon"><ui-icon name="production"></ui-icon></span><div><h2>{{ isEmployeeList ? 'Produção por funcionário' : 'Produção por peça' }}</h2><p>Top {{ topChartRows.length }} · dados do período selecionado</p></div></div></header>
+        <div class="bar-chart" role="img" [attr.aria-label]="'Produção por ' + (isEmployeeList ? 'funcionário' : 'peça')">
+          @for (row of topChartRows; track trackRow($index, row); let i = $index) { <div class="bar-row"><span [title]="chartLabel(row)">{{ chartLabel(row) }}</span><i><b [style.width.%]="share(row.quantidadeProduzida, topChartRows[0]?.quantidadeProduzida || 1)" [style.animation-delay.ms]="i * 35"></b></i><strong>{{ fmt(row.quantidadeProduzida) }}</strong></div> }
+        </div>
+      </article>
+      <article class="drilldown-panel distribution-panel"><header><div><span class="panel-accent-icon panel-accent-icon--blue"><ui-icon name="sectors"></ui-icon></span><div><h2>Distribuição</h2><p>{{ fmt(entitiesCount) }} {{ isEmployeeList ? 'funcionários' : 'peças' }} no ranking</p></div></div></header>
+        <div class="distribution-list">@for (row of topChartRows.slice(0, 6); track trackRow($index, row)) { <div><span>{{ chartLabel(row) }}</span><strong>{{ share(row.quantidadeProduzida, totalProduction) | number:'1.0-1' }}%</strong><i><b [style.width.%]="share(row.quantidadeProduzida, totalProduction)"></b></i></div> }</div>
+      </article>
+    </section>
+    <section class="drilldown-panel ranking-panel">
+      <header class="ranking-heading"><div><span class="panel-accent-icon" [class.panel-accent-icon--blue]="isPartList"><ui-icon [name]="isEmployeeList ? 'people' : 'parts'"></ui-icon></span><div><h2>Ranking completo {{ isEmployeeList ? 'de funcionários' : 'de peças' }}</h2><p>{{ fmt(filteredRows.length) }} resultados · participação calculada sobre a produção do filtro</p></div></div>
+        <div class="table-controls"><label class="search-control"><span class="sr-only">Buscar {{ isEmployeeList ? 'funcionário' : 'peça' }}</span><ui-icon name="search"></ui-icon><input type="search" [placeholder]="isEmployeeList ? 'Buscar funcionário...' : 'Buscar peça...'" [ngModel]="search()" (ngModelChange)="setSearch($event)" /></label><label class="sort-control"><span class="sr-only">Ordenar resultados</span><select [ngModel]="sort()" (ngModelChange)="changeSort($event)"><option value="production-desc">Produção ↓</option><option value="production-asc">Produção ↑</option><option value="code">Código</option></select></label></div>
+      </header>
+      <div class="table-scroll"><table><thead><tr><th>#</th><th>Código</th><th>{{ isEmployeeList ? 'Funcionário' : 'Peça' }}</th><th>Produção</th><th>Participação</th><th><span class="sr-only">Abrir detalhe</span></th></tr></thead><tbody>
+        @for (row of visibleRows; track trackRow($index, row); let i = $index) { <tr tabindex="0" (click)="openRow(row)" (keydown.enter)="openRow(row)" (keydown.space)="$event.preventDefault(); openRow(row)" [attr.aria-label]="'Abrir ' + (row.nome || row.codigo || entityNoun)"><td>{{ page() * pageSize + i + 1 }}</td><td class="code-cell">{{ row.codigo || '—' }}</td><td class="name-cell">{{ row.nome || row.codigo || '—' }}</td><td class="quantity-cell">{{ fmt(row.quantidadeProduzida) }}</td><td><span class="share-cell">{{ share(row.quantidadeProduzida, totalProduction) | number:'1.0-1' }}%</span></td><td class="row-arrow"><ui-icon name="arrow"></ui-icon></td></tr> }
+        @empty { <tr><td colspan="6" class="no-results">Nenhum resultado corresponde à busca.</td></tr> }
+      </tbody></table></div>
+      <footer class="pagination"><span>{{ filteredRows.length ? page() * pageSize + 1 : 0 }}–{{ pageEnd }} de {{ filteredRows.length }}</span><div><button type="button" aria-label="Página anterior" [disabled]="page() === 0" (click)="previousPage()">‹</button><span>{{ page() + 1 }} / {{ totalPages }}</span><button type="button" aria-label="Próxima página" [disabled]="page() + 1 >= totalPages" (click)="nextPage()">›</button></div></footer>
+    </section>
+  } @else {
+    <section class="drilldown-kpis">
+      <article class="drilldown-card"><span>Produção total</span><strong>{{ fmt(totalProduction) }}</strong><small>unidades produzidas</small></article>
+      @if (isEmployeeDetail) { <article class="drilldown-card"><span>Peças diferentes</span><strong>{{ fmt(distinctParts) }}</strong><small>códigos de peça</small></article><article class="drilldown-card"><span>Participação no filtro</span><strong>{{ share(totalProduction, detailDashboard()?.quantidadeProduzida) | number:'1.0-1' }}%</strong><small>do total deste período e setor</small></article><article class="drilldown-card"><span>Registros</span><strong>{{ fmt(employee()?.quantidadeRegistros) }}</strong><small>registros de produção</small></article> }
+      @else { <article class="drilldown-card"><span>Funcionários envolvidos</span><strong>{{ fmt(detailDashboard()?.funcionariosEnvolvidos) }}</strong><small>no período e filtro</small></article><article class="drilldown-card"><span>Participação</span><strong>{{ participation | number:'1.0-1' }}%</strong><small>da produção do escopo</small></article><article class="drilldown-card"><span>Registros</span><strong>{{ fmt(recordCount) }}</strong><small>registros de produção</small></article> }
+    </section>
+    <section class="drilldown-panels detail-panels">
+      <article class="drilldown-panel"><header><div><span class="panel-accent-icon"><ui-icon name="production"></ui-icon></span><div><h2>Evolução da produção</h2><p>Série diária real do período</p></div></div></header><ui-line-chart [points]="timeSeries()" [label]="'Evolução diária de ' + (isEmployeeDetail ? (employee()?.nome || employee()?.codigo) : (detailEntity?.nome || detailEntity?.codigo))"></ui-line-chart></article>
+      <article class="drilldown-panel related-panel"><header><div><span class="panel-accent-icon panel-accent-icon--blue"><ui-icon [name]="isEmployeeDetail ? 'parts' : 'people'"></ui-icon></span><div><h2>{{ isEmployeeDetail ? 'Peças produzidas' : 'Funcionários que produziram' }}</h2><p>Produção registrada no período</p></div></div></header>
+        <div class="related-list">@for (row of relatedRows().slice(0, 20); track row.id ?? row.codigo) { <div><span><b>{{ row.codigo || '—' }}</b><small>{{ row.nome || row.codigo || '—' }}</small></span><strong>{{ fmt(row.quantidadeProduzida) }}</strong><i><b [style.width.%]="share(row.quantidadeProduzida, relatedRows()[0]?.quantidadeProduzida || 1)"></b></i></div> } @empty { <p class="muted">Não há detalhamento adicional disponível neste contrato.</p> }</div>
+      </article>
+    </section>
+  }
+</main>

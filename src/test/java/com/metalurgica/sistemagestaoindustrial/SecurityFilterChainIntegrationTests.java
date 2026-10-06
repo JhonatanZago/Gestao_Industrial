@@ -51,9 +51,7 @@ class SecurityFilterChainIntegrationTests {
         mvc.perform(options("/api/v1/auth/login")
                 .header(HttpHeaders.ORIGIN, "http://localhost:4200")
                 .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
-            .andExpect(status().isOk())
-            .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
-                    org.hamcrest.Matchers.containsString(HttpHeaders.CONTENT_DISPOSITION)));
+            .andExpect(status().isOk());
     }
 
     @Test

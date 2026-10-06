@@ -54,8 +54,8 @@
         @for (item of visibleMenu(); track item.key) {
           <button
             type="button"
-            [class.active]="activeView() === item.key"
-            [attr.aria-current]="activeView() === item.key ? 'page' : null"
+            [class.active]="activeView() === item.key || (item.key === 'relatorios' && isReportDrilldown())"
+            [attr.aria-current]="activeView() === item.key || (item.key === 'relatorios' && isReportDrilldown()) ? 'page' : null"
             (click)="selectView(item.key)"
           >
             <span class="nav-icon"><ui-icon [name]="item.icon"></ui-icon></span
@@ -83,7 +83,7 @@
             <p>{{ subtitle() }}</p>
           </div>
         </div>
-        @if (activeView() !== 'importacoes') {
+        @if (activeView() !== 'importacoes' && activeView() !== 'importacoes-automaticas') {
         <div class="header-actions">
           <div class="period-control">
             <label for="period">Período</label
@@ -691,14 +691,46 @@
               </div>
             }
           </section>
+        } @else if (activeView() === 'importacoes-automaticas') {
+          <app-automatic-imports></app-automatic-imports>
         } @else if (activeView() === 'relatorios') {
-          <section class="dashboard-panel module-panel">
-            <h2>Relatórios</h2>
-            <p>Resultado reconciliado com o dashboard.</p>
-            <button class="primary-button" type="button" (click)="loadReport()">
-              Gerar relatório
-            </button>
-          </section>
+          <div class="report-view" aria-labelledby="report-page-title">
+            <section class="dashboard-panel report-config-panel">
+              <div class="report-section-title"><span class="report-heading-icon"><ui-icon name="report"></ui-icon></span><div><p class="report-eyebrow">CONFIGURAÇÃO</p><h2 id="report-page-title">Configurar relatório</h2><p>Defina o período e o setor para consultar a produção.</p></div></div>
+              <div class="report-config-grid">
+                <div class="report-field"><label for="report-period">Período</label><select id="report-period" [ngModel]="selectedPeriod()" (ngModelChange)="selectPeriod($event)" [disabled]="reportLoading()"><option *ngFor="let period of periodOptions" [value]="period">{{ period }}</option></select><small>O período é compartilhado com o cabeçalho do módulo.</small></div>
+                <div class="report-field"><label for="report-sector">Setor</label><select id="report-sector" [ngModel]="reportSectorId() ?? ''" (ngModelChange)="changeReportSector($event)" [disabled]="importSectorLoading() || reportLoading()"><option value="">Todos os setores</option><option *ngFor="let sector of sectorsOptions()" [value]="sector.id">{{ sector.nome }}{{ sector.codigo ? ' · ' + sector.codigo : '' }}</option></select><small>{{ importSectorLoading() ? 'Carregando setores autorizados...' : 'Setores disponíveis no escopo da sua conta.' }}</small>@if (importSectorError()) { <span class="report-field-error" role="alert">Não foi possível carregar setores autorizados. <button type="button" (click)="loadSectors()">Tentar novamente</button></span> }</div>
+                <div class="report-config-action"><button class="report-generate-button" type="button" (click)="loadReport()" [disabled]="reportLoading()" [attr.aria-busy]="reportLoading()"><ui-icon name="report"></ui-icon><span>{{ reportCtaLabel() }}</span><ui-icon name="arrow"></ui-icon></button><p class="report-feedback" aria-live="polite" [class.report-feedback--error]="reportState() === 'ERROR'">{{ reportFeedback() }}</p></div>
+              </div>
+            </section>
+            @if (reportLoading() && !report()) {
+              <section class="report-kpis" aria-label="Carregando indicadores" aria-live="polite">@for (placeholder of [1,2,3,4]; track placeholder) { <article class="report-kpi report-kpi--skeleton"><span class="skeleton skeleton-icon"></span><span class="skeleton skeleton-line skeleton-line--medium"></span><span class="skeleton skeleton-value"></span><span class="skeleton skeleton-line"></span></article> }</section>
+              <section class="report-panels"><article class="dashboard-panel report-chart-panel"><span class="skeleton skeleton-line skeleton-line--medium"></span><span class="skeleton skeleton-chart"></span></article><article class="dashboard-panel report-distribution-panel"><span class="skeleton skeleton-line skeleton-line--medium"></span><span class="skeleton skeleton-chart"></span></article></section>
+            } @else if (reportState() === 'ERROR' && !report()) {
+              <section class="report-state report-state--error" role="alert"><span class="report-state-icon"><ui-icon name="warning"></ui-icon></span><h2>Não foi possível gerar o relatório</h2><p>Não foi possível consultar os dados necessários.</p>@if (reportError()) { <small>{{ reportError() }}</small> }<button class="report-generate-button" type="button" (click)="loadReport()"><ui-icon name="refresh"></ui-icon>Tentar novamente</button></section>
+            } @else if (reportState() === 'SUCCESS' && !reportHasData()) {
+              <section class="report-state report-state--empty"><span class="report-state-icon"><ui-icon name="report"></ui-icon></span><h2>Nenhum dado encontrado</h2><p>Não existem registros de produção para o período e os filtros selecionados.</p><button class="report-secondary-button" type="button" (click)="changeReportSector('')">Alterar filtros</button></section>
+            } @else if (reportHasData()) {
+              <section class="report-kpis" aria-label="Indicadores do relatório">@for (stat of reportStats(); track stat.label; let index = $index) { <article class="report-kpi" [class]="'report-kpi report-kpi--' + index"><span class="report-kpi-icon"><ui-icon [name]="stat.icon"></ui-icon></span><span class="report-kpi-label">{{ stat.label }}</span><strong>{{ stat.value }}</strong><small>{{ stat.unit }}</small></article> }</section>
+              <section class="report-panels">
+                <article class="dashboard-panel report-chart-panel"><header class="report-panel-heading"><div class="report-section-title"><span class="report-heading-icon report-heading-icon--green"><ui-icon name="production"></ui-icon></span><div><h2>Evolução da produção</h2><p>Série diária retornada pelo relatório.</p></div></div></header><ui-line-chart [points]="reportDashboard()?.evolucao ?? []" label="Evolução da produção no relatório"></ui-line-chart></article>
+                <article class="dashboard-panel report-distribution-panel"><header class="report-panel-heading"><div class="report-section-title"><span class="report-heading-icon report-heading-icon--blue"><ui-icon name="sectors"></ui-icon></span><div><h2>{{ reportSectorId() === null ? 'Produção por setor' : 'Produção do setor' }}</h2><p>{{ reportScopeLabel() }} · dados reais</p></div></div></header><div class="report-sector-list">@for (sector of reportSectors(); track sector.id ?? sector.codigo) { <div class="report-sector-item"><div class="report-sector-line"><span><b>{{ sector.nome || sector.codigo }}</b><small>{{ formatNumber(sector.quantidadeProduzida) }} peças</small></span><strong>{{ reportShare(sector.quantidadeProduzida) }}%</strong></div><div class="report-sector-track"><i [style.width.%]="reportSectorId() === null ? reportShare(sector.quantidadeProduzida) : reportBar(sector.quantidadeProduzida)"></i></div></div> } @empty { <p class="report-muted">Não há distribuição por setor neste retorno.</p> }</div></article>
+              </section>
+              <section class="dashboard-panel report-preview" aria-labelledby="report-preview-title">
+                <header class="report-preview-header"><div class="report-section-title"><span class="report-heading-icon report-heading-icon--green"><ui-icon name="report"></ui-icon></span><div><p class="report-eyebrow">PRÉVIA DO RELATÓRIO</p><h2 id="report-preview-title">Relatório de Produção</h2><p>{{ selectedPeriod() }} · {{ reportScopeLabel() }}</p></div></div><div class="report-export-actions" aria-label="Exportar relatório"><button class="report-export-button" type="button" (click)="exportReport('CSV')" [disabled]="!!exportingFormat()" [attr.aria-busy]="exportingFormat() === 'CSV'"><ui-icon name="download"></ui-icon>{{ exportingFormat() === 'CSV' ? 'Exportando...' : 'Exportar CSV' }}</button><button class="report-export-button report-export-button--excel" type="button" (click)="exportReport('XLSX')" [disabled]="!!exportingFormat()" [attr.aria-busy]="exportingFormat() === 'XLSX'"><ui-icon name="download"></ui-icon>{{ exportingFormat() === 'XLSX' ? 'Exportando...' : 'Exportar Excel' }}</button></div></header>
+                @if (reportError() && exportingFormat() === null) { <p class="report-export-error" role="alert">{{ reportError() }}</p> }
+                <div class="report-preview-summary"><div class="report-preview-label"><span class="report-eyebrow">RESUMO EXECUTIVO</span><span>Período consultado · {{ reportDashboard()?.inicio }} — {{ reportDashboard()?.fim }}</span></div><dl>@for (stat of reportStats(); track stat.label) { <div><dt>{{ stat.label }}</dt><dd>{{ stat.value }}</dd></div> }</dl></div>
+                <nav class="report-drilldown-links" aria-label="Análises detalhadas"><button type="button" (click)="openReportDrilldown('employees')"><ui-icon name="people"></ui-icon> Ver todos os funcionários <ui-icon name="arrow"></ui-icon></button><button type="button" (click)="openReportDrilldown('parts')"><ui-icon name="parts"></ui-icon> Ver todas as peças <ui-icon name="arrow"></ui-icon></button></nav>
+                  <div class="report-rankings"><article><header><span class="report-heading-icon report-heading-icon--orange"><ui-icon name="people"></ui-icon></span><div><h3>Funcionários</h3><p>Principais resultados do setor</p></div></header><ol>@for (item of reportEmployees(); track item.id ?? item.codigo; let i = $index) { <li><span>{{ i + 1 }}</span><b>{{ item.nome || item.codigo }}</b><strong>{{ formatNumber(item.quantidadeProduzida) }}</strong><i><em [style.width.%]="reportRankingShare(item.quantidadeProduzida, reportEmployees())"></em></i></li> } @empty { <p class="report-muted">Sem dados de funcionários.</p> }</ol></article><article><header><span class="report-heading-icon report-heading-icon--purple"><ui-icon name="parts"></ui-icon></span><div><h3>Peças</h3><p>Principais resultados do setor</p></div></header><ol>@for (item of reportParts(); track item.id ?? item.codigo; let i = $index) { <li><span>{{ i + 1 }}</span><b>{{ item.nome || item.codigo }}</b><strong>{{ formatNumber(item.quantidadeProduzida) }}</strong><i><em [style.width.%]="reportRankingShare(item.quantidadeProduzida, reportParts())"></em></i></li> } @empty { <p class="report-muted">Sem dados de peças.</p> }</ol></article></div>
+              </section>
+            }
+          </div>
+        } @else if (activeView() === 'relatorios-funcionarios' || activeView() === 'relatorios-funcionario' || activeView() === 'relatorios-pecas' || activeView() === 'relatorios-peca') {
+          @defer (when isReportDrilldown()) {
+          <app-report-drilldown [mode]="reportDrilldownMode()" [companyId]="reportCompanyId()" [period]="reportContextPeriod()" [sectorId]="reportSectorId()" [entityId]="reportEntityId()" [sectorLabel]="reportScopeLabel()" [reportDashboard]="reportDashboard()" [reloadToken]="reportReloadToken()" (navigate)="navigateReport($event)" (loadState)="onReportDrilldownLoadState($event)"></app-report-drilldown>
+          } @placeholder {
+            <section class="dashboard-panel report-loading-placeholder" aria-live="polite">Carregando análise detalhada...</section>
+          }
         } @else {
           <section class="dashboard-panel module-panel">
             <h2>{{ title() }}</h2>

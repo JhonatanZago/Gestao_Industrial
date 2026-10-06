@@ -37,6 +37,7 @@ public class RegistroProducao {
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "importacao_id")
     private ImportacaoProducao importacao;
     @Column(name = "importacao_linha") private Integer importacaoLinha;
+    @Column(name = "fingerprint_registro", length = 64) private String fingerprintRegistro;
     @Column(nullable = false, precision = 19, scale = 3)
     private BigDecimal quantidade;
     @Column(nullable = false)

@@ -51,6 +51,7 @@ public class ImportacaoValidator {
                         rows.stream().map(row -> code(row.codigoPeca())).collect(Collectors.toSet()))
                 .stream().collect(Collectors.toMap(p -> code(p.getCodigo()), p -> p, (a, b) -> a));
         var valid = new ArrayList<LinhaValidadaImportacao>();
+        var alreadyProcessed = new ArrayList<LinhaValidadaImportacao>();
         var signatures = new HashMap<String, Integer>();
         var byEmployee = new HashMap<Long, List<LinhaValidadaImportacao>>();
         for (var row : rows) {
@@ -76,17 +77,23 @@ public class ImportacaoValidator {
             }
             if (bad) continue;
 
-            String signature = code(row.codigoFuncionario()) + "|" + code(row.codigoPeca()) + "|" + row.quantidade() + "|" + start + "|" + end;
+            String signature = FingerprintRegistroProducao.of(empresaId, setorId, func, peca, row.quantidade(), start, end);
             if (signatures.containsKey(signature)) {
                 errors.add(err(row, "linha", "LINHA_DUPLICADA", "Linha duplicada da linha " + signatures.get(signature) + "."));
                 continue;
             }
             signatures.put(signature, row.linha());
+            var line = new LinhaValidadaImportacao(row, func, peca, machine, shift, start, end, signature);
+            if (producaoRepository.existsByFingerprintRegistro(signature)
+                    || producaoRepository.existsByEmpresaIdAndSetorIdAndFuncionarioIdAndPecaIdAndQuantidadeAndInicioAndFim(
+                    empresaId, setorId, func.getId(), peca.getId(), row.quantidade(), start, end)) {
+                alreadyProcessed.add(line);
+                continue;
+            }
             if (producaoRepository.existsOverlapping(func.getId(), start, end, null)) {
                 errors.add(err(row, "periodo", "SOBREPOSICAO", "Periodo sobreposto a uma producao existente."));
                 continue;
             }
-            var line = new LinhaValidadaImportacao(row, func, peca, machine, shift, start, end);
             boolean overlaps = false;
             for (var prior : byEmployee.getOrDefault(func.getId(), List.of())) {
                 if (prior.inicio().isBefore(end) && prior.fim().isAfter(start)) {
@@ -100,7 +107,7 @@ public class ImportacaoValidator {
                 byEmployee.computeIfAbsent(func.getId(), ignored -> new ArrayList<>()).add(line);
             }
         }
-        return new ValidacaoImportacaoResult(valid, errors, input.totalLinhas());
+        return new ValidacaoImportacaoResult(valid, alreadyProcessed, errors, input.totalLinhas());
     }
 
     private static boolean isPositiveInteger(BigDecimal value) {

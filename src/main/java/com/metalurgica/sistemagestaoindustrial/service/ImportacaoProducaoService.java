@@ -1,6 +1,8 @@
 package com.metalurgica.sistemagestaoindustrial.service;
 
 import com.metalurgica.sistemagestaoindustrial.domain.ImportacaoProducao;
+import com.metalurgica.sistemagestaoindustrial.domain.OrigemImportacao;
+import com.metalurgica.sistemagestaoindustrial.domain.OrigemProducao;
 import com.metalurgica.sistemagestaoindustrial.domain.StatusImportacao;
 import com.metalurgica.sistemagestaoindustrial.dto.response.ImportacaoProducaoResponse;
 import com.metalurgica.sistemagestaoindustrial.dto.response.ResultadoLinhaImportacaoResponse;
@@ -62,7 +64,15 @@ public class ImportacaoProducaoService {
     }
 
     public ImportacaoProducaoResponse importFile(Long empresaId, Long setorId, MultipartFile file) {
-        return process(empresaId, setorId, file, true);
+        return process(empresaId, setorId, file, true, OrigemImportacao.MANUAL);
+    }
+
+    public ImportacaoProducaoResponse importFileFromWatcher(Long empresaId, Long setorId, MultipartFile file) {
+        return process(empresaId, setorId, file, true, OrigemImportacao.FILE_WATCHER);
+    }
+
+    public ImportacaoProducaoResponse importFileFromReconciliation(Long empresaId, Long setorId, MultipartFile file) {
+        return process(empresaId, setorId, file, true, OrigemImportacao.RECONCILIACAO);
     }
 
     @Transactional(readOnly = true)
@@ -99,6 +109,11 @@ public class ImportacaoProducaoService {
     }
 
     private ImportacaoProducaoResponse process(Long empresaId, Long setorId, MultipartFile file, boolean persist) {
+        return process(empresaId, setorId, file, persist, OrigemImportacao.MANUAL);
+    }
+
+    private ImportacaoProducaoResponse process(Long empresaId, Long setorId, MultipartFile file, boolean persist,
+                                               OrigemImportacao origem) {
         sectorScopeService.assertAllowed(empresaId, setorId);
         empresaService.find(empresaId);
         setorRepository.findByIdAndEmpresaId(setorId, empresaId)
@@ -115,7 +130,7 @@ public class ImportacaoProducaoService {
         String correlationId = CorrelationContext.current();
         try {
             String filename = file == null ? "arquivo" : Objects.requireNonNullElse(file.getOriginalFilename(), "arquivo.xlsx");
-            importacaoId = lifecycle.create(empresaId, setorId, sanitizeFileName(filename), hash, correlationId);
+            importacaoId = lifecycle.create(empresaId, setorId, sanitizeFileName(filename), hash, correlationId, origem);
             LOG.info("import_started importacaoId={} empresaId={} setorId={}", importacaoId, empresaId, setorId);
 
             ExcelReadResult read;

@@ -2,20 +2,24 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { finalize } from 'rxjs';
 import { AuthService } from './core/auth.service';
 import { DashboardService } from './core/dashboard.service';
-import { AssistantAnswer, ImportLineResult, ImportResult, RagDocument, ResourceService } from './core/feature-services';
-import { CoreDashboard, DashboardSummary, EmployeeAnalytics, ProductionGroup, SimplifiedReport } from './core/models';
+import { AssistantAnswer, ImportLineResult, ImportResult, RagDocument, reportFilename, ResourceService } from './core/feature-services';
+import { CoreDashboard, DashboardSummary, EmployeeAnalytics, ProductionGroup, ReportExportFormat, SimplifiedReport } from './core/models';
 import { UiChartComponent } from './shared/ui-chart.component';
 import { UiIconComponent } from './shared/ui-icon.component';
+import { ReportDrilldownComponent, ReportDrilldownMode, ReportDrilldownNavigation } from './features/reports/report-drilldown.component';
+import { AutomaticImportsComponent } from './features/automatic-imports/automatic-imports.component';
 
-type ViewKey = 'dashboard' | 'setores' | 'setor-detalhe' | 'importacoes' | 'relatorios' | 'funcionarios' | 'pecas' | 'assistente';
+type ViewKey = 'dashboard' | 'setores' | 'setor-detalhe' | 'importacoes' | 'importacoes-automaticas' | 'relatorios' | 'relatorios-funcionarios' | 'relatorios-funcionario' | 'relatorios-pecas' | 'relatorios-peca' | 'funcionarios' | 'pecas' | 'assistente';
 interface MenuItem { key: ViewKey; label: string; icon: string; permission?: string; }
 interface SectorVisual { color: string; soft: string; icon: string; }
 interface SectorOption { id: number; nome: string; codigo?: string; descricao?: string | null; ativo?: boolean; }
 type ImportState = 'SECTOR' | 'FILE' | 'SELECTED' | 'VALIDATING' | 'VALIDATED' | 'VALIDATION_ERROR' | 'IMPORTING' | 'SUCCESS' | 'DUPLICATE' | 'ERROR';
+type ReportState = 'IDLE' | 'LOADING' | 'SUCCESS' | 'ERROR';
 
-@Component({ selector: 'app-root', standalone: true, imports: [CommonModule, FormsModule, UiChartComponent, UiIconComponent], templateUrl: './app.html', styleUrl: './app.scss' })
+@Component({ selector: 'app-root', standalone: true, imports: [CommonModule, FormsModule, UiChartComponent, UiIconComponent, ReportDrilldownComponent, AutomaticImportsComponent], templateUrl: './app.html', styleUrl: './app.scss' })
 export class App {
   private readonly auth = inject(AuthService);
   private readonly dashboardApi = inject(DashboardService);
@@ -25,6 +29,8 @@ export class App {
   readonly collapsed = signal(false);
   readonly mobileOpen = signal(false);
   readonly activeView = signal<ViewKey>('dashboard');
+  readonly reportEntityId = signal<number | null>(null);
+  readonly reportReloadToken = signal(0);
   readonly showPassword = signal(false);
   readonly loading = signal(false);
   readonly error = signal('');
@@ -39,6 +45,7 @@ export class App {
     { key: 'dashboard', label: 'Visao geral', icon: 'dashboard', permission: 'ANALYTICS_VISUALIZAR' },
     { key: 'setores', label: 'Setores', icon: 'sectors', permission: 'SETOR_VISUALIZAR' },
     { key: 'importacoes', label: 'Importar Excel', icon: 'import', permission: 'PRODUCAO_IMPORTAR' },
+    { key: 'importacoes-automaticas', label: 'Importações Automáticas', icon: 'refresh', permission: 'OPERACAO_MONITORAR' },
     { key: 'relatorios', label: 'Relatorios', icon: 'report', permission: 'RELATORIO_VISUALIZAR' }
   ];
 
@@ -47,9 +54,13 @@ export class App {
     const items = this.menu.filter(item => !item.permission || this.auth.hasPermission(item.permission));
     return this.auth.companyId() ? items : [...items, { key: 'assistente' as ViewKey, label: 'Assistente', icon: 'IA' }];
   });
-  readonly title = computed(() => this.activeView() === 'dashboard' ? 'Visão Geral' : this.activeView() === 'setor-detalhe' ? (this.selectedSector()?.nome || this.selectedSector()?.codigo || 'Detalhes do setor') : (this.menu.find(item => item.key === this.activeView())?.label ?? 'Visão Geral'));
-  readonly subtitle = computed(() => this.activeView() === 'dashboard' ? 'Acompanhe a produção da empresa em tempo real.' : this.activeView() === 'setores' ? 'Acompanhe a produção por área da empresa.' : this.activeView() === 'setor-detalhe' ? 'Dados reais do período selecionado.' : this.activeView() === 'importacoes' ? 'Importe os dados de produção e atualize os dashboards.' : 'Dados apresentados a partir dos contratos do Backend V1.');
-  readonly headerIcon = computed(() => this.activeView() === 'importacoes' ? 'import' : this.activeView() === 'setores' || this.activeView() === 'setor-detalhe' ? 'sectors' : 'dashboard');
+  readonly title = computed(() => this.activeView() === 'dashboard' ? 'Visão Geral' : this.activeView() === 'setor-detalhe' ? (this.selectedSector()?.nome || this.selectedSector()?.codigo || 'Detalhes do setor') : this.activeView() === 'relatorios-funcionarios' ? 'Visão Geral de Funcionários' : this.activeView() === 'relatorios-funcionario' ? 'Visão do Funcionário' : this.activeView() === 'relatorios-pecas' ? 'Visão Geral de Peças' : this.activeView() === 'relatorios-peca' ? 'Visão da Peça' : (this.menu.find(item => item.key === this.activeView())?.label ?? 'Visão Geral'));
+  readonly subtitle = computed(() => this.activeView() === 'dashboard' ? 'Acompanhe a produção da empresa em tempo real.' : this.activeView() === 'setores' ? 'Acompanhe a produção por área da empresa.' : this.activeView() === 'setor-detalhe' ? 'Dados reais do período selecionado.' : this.activeView() === 'importacoes' ? 'Importe os dados de produção e atualize os dashboards.' : this.activeView() === 'importacoes-automaticas' ? 'Acompanhe a sincronização automática das planilhas de produção.' : this.isReportDrilldown() ? `${this.selectedPeriod()} · ${this.reportScopeLabel()}` : 'Gere e analise relatórios da produção industrial.');
+  readonly headerIcon = computed(() => this.activeView().startsWith('relatorios') ? 'reports' : this.activeView() === 'importacoes' ? 'import' : this.activeView() === 'importacoes-automaticas' ? 'refresh' : this.activeView() === 'setores' || this.activeView() === 'setor-detalhe' ? 'sectors' : 'dashboard');
+  readonly reportDrilldownMode = computed<ReportDrilldownMode>(() => this.activeView() === 'relatorios-funcionarios' ? 'employees' : this.activeView() === 'relatorios-funcionario' ? 'employee' : this.activeView() === 'relatorios-pecas' ? 'parts' : 'part');
+  readonly reportContextPeriod = computed(() => ({ label: this.selectedPeriod(), ...this.dashboardPeriod() }));
+  readonly reportCompanyId = computed(() => this.auth.companyId() ?? 0);
+  readonly isReportDrilldown = computed(() => this.activeView().startsWith('relatorios-'));
   readonly dashboard = signal<DashboardSummary | null>(null);
   readonly coreDashboard = signal<CoreDashboard | null>(null);
   readonly sectorDashboard = signal<CoreDashboard | null>(null);
@@ -63,6 +74,9 @@ export class App {
   readonly employeeDetailError = signal('');
   readonly report = signal<SimplifiedReport | null>(null);
   readonly reportError = signal('');
+  readonly reportState = signal<ReportState>('IDLE');
+  readonly reportFeedback = signal('Configure os filtros e gere o relat\u00f3rio.');
+  readonly exportingFormat = signal<ReportExportFormat | null>(null);
   readonly sectorRecords = signal<ProductionGroup[]>([]);
   readonly employeeDetail = signal<EmployeeAnalytics | null>(null);
   readonly dashboardError = signal('');
@@ -115,7 +129,7 @@ export class App {
   });
   readonly sectorEmployees = computed(() => (this.sectorDashboard()?.porFuncionario ?? []).slice(0, 5));
   readonly sectorParts = computed(() => (this.sectorDashboard()?.porPeca ?? []).slice(0, 5));
-  readonly viewLoading = computed(() => this.activeView() === 'setores' ? this.sectorsLoading() : this.activeView() === 'setor-detalhe' ? this.sectorDetailLoading() : this.loading());
+  readonly viewLoading = computed(() => this.activeView() === 'setores' ? this.sectorsLoading() : this.activeView() === 'setor-detalhe' ? this.sectorDetailLoading() : this.activeView() === 'relatorios' || this.isReportDrilldown() ? this.reportLoading() || this.loading() : this.loading());
   readonly selectedFile = signal('');
   readonly selectedFileObject = signal<File | null>(null);
   readonly importStatus = signal('');
@@ -133,6 +147,28 @@ export class App {
   readonly reportSectorId = signal<number | null>(null);
   readonly sectorsOptions = signal<SectorOption[]>([]);
   readonly selectedImportSector = computed(() => this.sectorsOptions().find(sector => sector.id === this.importSectorId()) ?? null);
+  readonly selectedReportSector = computed(() => this.sectorsOptions().find(sector => sector.id === this.reportSectorId()) ?? null);
+  readonly reportDashboard = computed(() => this.report()?.dashboard ?? null);
+  readonly reportHasData = computed(() => {
+    const dashboard = this.reportDashboard();
+    return !!dashboard && (Number(dashboard.quantidadeProduzida ?? 0) > 0 || (dashboard.porSetor?.length ?? 0) > 0 || (dashboard.evolucao?.length ?? 0) > 0);
+  });
+  readonly reportStats = computed(() => {
+    const data = this.reportDashboard();
+    if (!data) return [];
+    return [
+      { label: 'Produção total', value: this.formatNumber(data.quantidadeProduzida), unit: 'peças produzidas', icon: 'production' },
+      { label: 'Setores', value: this.formatNumber(data.setoresComDados), unit: 'com produção no período', icon: 'sectors' },
+      { label: 'Funcionários', value: this.formatNumber(data.funcionariosEnvolvidos), unit: 'envolvidos na produção', icon: 'people' },
+      { label: 'Peças', value: this.formatNumber(data.codigosPecaProduzidos), unit: 'códigos produzidos', icon: 'parts' }
+    ];
+  });
+  readonly reportSectors = computed(() => [...(this.reportDashboard()?.porSetor ?? [])].sort((left, right) => Number(right.quantidadeProduzida ?? 0) - Number(left.quantidadeProduzida ?? 0)));
+  readonly reportEmployees = computed(() => (this.reportDashboard()?.porFuncionario ?? []).slice(0, 5));
+  readonly reportParts = computed(() => (this.reportDashboard()?.porPeca ?? []).slice(0, 5));
+  readonly reportScopeLabel = computed(() => this.selectedReportSector()?.nome ?? 'Todos os setores');
+  readonly reportCtaLabel = computed(() => this.reportState() === 'LOADING' ? 'Gerando relat\u00f3rio...' : this.reportState() === 'SUCCESS' ? 'Relat\u00f3rio gerado' : this.reportState() === 'ERROR' ? 'Tentar novamente' : 'Gerar relat\u00f3rio');
+  readonly reportLoading = computed(() => this.reportState() === 'LOADING');
   readonly importStep = computed(() => {
     const state = this.importState();
     if (state === 'SECTOR') return 1;
@@ -156,13 +192,17 @@ export class App {
     { color: '#ef5b82', soft: 'rgba(239,91,130,.12)', icon: 'production' }
   ];
 
+  constructor() {
+    if (this.isLoggedIn()) { this.restoreReportRoute(); this.restoreAutomaticRoute(); }
+  }
+
   async submitLogin() {
     this.loading.set(true);
     this.error.set('');
     try {
       await this.auth.login(this.login.username, this.login.password);
       this.isLoggedIn.set(true);
-      this.refreshDashboard();
+      if (!this.restoreReportRoute()) this.refreshDashboard();
     } catch {
       this.error.set('Nao foi possivel entrar. Verifique suas credenciais ou a disponibilidade do backend.');
     } finally {
@@ -176,6 +216,8 @@ export class App {
     this.activeView.set('dashboard');
     this.dashboard.set(null);
     this.coreDashboard.set(null);
+    this.reportEntityId.set(null);
+    this.activeView.set('dashboard');
   }
 
   selectView(view: ViewKey) {
@@ -194,7 +236,11 @@ export class App {
       this.setViewUrl('/app/importacoes');
       if (!this.sectorsOptions().length) this.loadSectors();
     }
-    if (view === 'relatorios' && !this.sectorsOptions().length) this.loadSectors();
+    if (view === 'importacoes-automaticas') this.setViewUrl('/app/importacoes-automaticas');
+    if (view === 'relatorios') {
+      this.setViewUrl(this.reportUrl('relatorios'));
+      if (!this.sectorsOptions().length) this.loadSectors();
+    }
     if (view === 'relatorios') this.loadReport();
     if (view === 'assistente') this.loadRagDocuments();
     if (['funcionarios', 'pecas'].includes(view)) this.loadModule(view);
@@ -534,7 +580,30 @@ export class App {
 
   selectPeriod(period: string) {
     this.selectedPeriod.set(period);
+    if (this.isReportDrilldown()) { this.replaceReportUrl(); this.loadReport(); return; }
     this.refreshCurrentView();
+  }
+
+  openReportDrilldown(screen: 'employees' | 'parts') {
+    this.navigateReport({ screen });
+  }
+
+  navigateReport(destination: ReportDrilldownNavigation) {
+    if (!this.auth.hasPermission('RELATORIO_VISUALIZAR')) return;
+    const views: Record<ReportDrilldownNavigation['screen'], ViewKey> = {
+      relatorios: 'relatorios', employees: 'relatorios-funcionarios', employee: 'relatorios-funcionario',
+      parts: 'relatorios-pecas', part: 'relatorios-peca'
+    };
+    this.activeView.set(views[destination.screen]);
+    this.reportEntityId.set(destination.id ?? null);
+    this.mobileOpen.set(false);
+    this.setViewUrl(this.reportUrl(destination.screen, destination.id));
+    if (destination.screen === 'relatorios' && !this.report()) this.loadReport();
+    if (destination.screen !== 'relatorios' && !this.sectorsOptions().length) this.loadSectors();
+  }
+
+  onReportDrilldownLoadState(state: 'LOADING' | 'SUCCESS' | 'EMPTY' | 'ERROR') {
+    this.refreshState.set(state === 'LOADING' ? 'ATUALIZANDO' : state === 'ERROR' ? 'ATUALIZAR' : 'ATUALIZADO');
   }
 
   loadSectorDashboard(sector: ProductionGroup) {
@@ -582,6 +651,7 @@ export class App {
       return;
     }
     if (this.activeView() === 'relatorios') { this.loadReport(); return; }
+    if (this.isReportDrilldown()) { this.reportReloadToken.update(value => value + 1); this.loadReport(); return; }
     this.refreshDashboard();
   }
 
@@ -639,11 +709,47 @@ export class App {
   }
 
   private setViewUrl(path: string) {
-    if (typeof history !== 'undefined' && location.pathname !== path) history.pushState({}, '', path);
+    if (typeof history !== 'undefined' && `${location.pathname}${location.search}` !== path) history.pushState({}, '', path);
+  }
+
+  private reportUrl(screen: ReportDrilldownNavigation['screen'] | 'relatorios', id?: number) {
+    const suffix = screen === 'relatorios' ? '' : screen === 'employees' ? '/funcionarios' : screen === 'employee' ? `/funcionarios/${id ?? ''}` : screen === 'parts' ? '/pecas' : `/pecas/${id ?? ''}`;
+    const params = new URLSearchParams({ period: this.selectedPeriod() });
+    if (this.reportSectorId() !== null) params.set('setorId', String(this.reportSectorId()));
+    return `/app/relatorios${suffix}?${params.toString()}`;
+  }
+
+  private replaceReportUrl() {
+    if (typeof history !== 'undefined' && this.isReportDrilldown()) history.replaceState({}, '', this.reportUrl(this.routeReportScreen(), this.reportEntityId() ?? undefined));
+  }
+
+  private routeReportScreen(): ReportDrilldownNavigation['screen'] {
+    const view = this.activeView();
+    return view === 'relatorios-funcionarios' ? 'employees' : view === 'relatorios-funcionario' ? 'employee' : view === 'relatorios-pecas' ? 'parts' : view === 'relatorios-peca' ? 'part' : 'relatorios';
+  }
+
+  private restoreReportRoute() {
+    const match = location.pathname.match(/^\/app\/relatorios(?:\/(funcionarios|pecas)(?:\/(\d+))?)?\/?$/);
+    if (!match) return false;
+    if (!this.auth.hasPermission('RELATORIO_VISUALIZAR')) { this.activeView.set('dashboard'); this.setViewUrl('/app/dashboard'); return true; }
+    const params = new URLSearchParams(location.search);
+    const period = params.get('period');
+    if (period && this.periodOptions.includes(period)) this.selectedPeriod.set(period);
+    const sectorId = Number(params.get('setorId'));
+    this.reportSectorId.set(Number.isInteger(sectorId) && sectorId > 0 ? sectorId : null);
+    this.reportEntityId.set(match[2] ? Number(match[2]) : null);
+    const section = match[1];
+    const view: ViewKey = section === 'funcionarios' ? (match[2] ? 'relatorios-funcionario' : 'relatorios-funcionarios') : section === 'pecas' ? (match[2] ? 'relatorios-peca' : 'relatorios-pecas') : 'relatorios';
+    this.activeView.set(view);
+    if (view === 'relatorios') this.loadReport();
+    else { this.loadReport(); if (!this.sectorsOptions().length) this.loadSectors(); }
+    return true;
   }
 
   @HostListener('window:popstate')
   onPopState() {
+    if (this.restoreReportRoute()) return;
+    if (this.restoreAutomaticRoute()) return;
     const detailMatch = location.pathname.match(/^\/app\/setores\/(\d+)/);
     if (detailMatch) {
       const sectorId = Number(detailMatch[1]);
@@ -660,15 +766,91 @@ export class App {
     }
   }
 
+  private restoreAutomaticRoute() {
+    if (location.pathname !== '/app/importacoes-automaticas') return false;
+    if (!this.auth.hasPermission('OPERACAO_MONITORAR')) { this.activeView.set('dashboard'); this.setViewUrl('/app/dashboard'); return true; }
+    this.activeView.set('importacoes-automaticas');
+    return true;
+  }
+
   loadReport() {
     const companyId = this.auth.companyId();
-    if (!companyId) return;
+    if (!companyId || this.reportLoading()) return;
     this.loading.set(true);
+    this.report.set(null);
     this.reportError.set('');
+    this.reportState.set('LOADING');
+    this.reportFeedback.set('Consultando dados reais de produ\u00e7\u00e3o...');
     const sectorId = this.reportSectorId();
-    this.dashboardApi.simplifiedReport(companyId, { ...this.dashboardPeriod(), ...(sectorId ? { setorId: sectorId } : {}) }).subscribe({
-      next: data => { this.report.set(data); this.loading.set(false); },
+    this.dashboardApi.simplifiedReport(companyId, { ...this.dashboardPeriod(), ...(sectorId ? { setorId: sectorId } : {}) }).pipe(finalize(() => {
+      if (this.reportState() === 'LOADING') {
+        this.reportState.set('ERROR');
+        this.reportFeedback.set('N\u00e3o foi poss\u00edvel gerar o relat\u00f3rio.');
+        this.refreshState.set('ATUALIZAR');
+      }
+    })).subscribe({
+      next: data => { this.report.set(data); this.loading.set(false); this.reportState.set('SUCCESS'); this.reportFeedback.set('Relat\u00f3rio atualizado com dados do per\u00edodo selecionado.'); this.refreshState.set('ATUALIZADO'); },
       error: error => { this.report.set(null); this.reportError.set(this.safeError('Não foi possível gerar o relatório.', error)); this.loading.set(false); }
+    });
+  }
+
+  changeReportSector(value: string) {
+    this.reportSectorId.set(value ? Number(value) : null);
+    this.report.set(null);
+    this.reportError.set('');
+    this.reportState.set('IDLE');
+    this.reportFeedback.set('Filtro atualizado. Gere o relat\u00f3rio para consultar os dados.');
+  }
+
+  reportShare(value: unknown) {
+    const total = Number(this.reportDashboard()?.quantidadeProduzida ?? 0);
+    return total > 0 ? Math.min(100, Math.round(Number(value ?? 0) / total * 100)) : 0;
+  }
+
+  reportBar(value: unknown) {
+    const maximum = Math.max(...this.reportSectors().map(item => Number(item.quantidadeProduzida ?? 0)), 1);
+    return Math.min(100, Math.round(Number(value ?? 0) / maximum * 100));
+  }
+
+  reportRankingShare(value: unknown, rows: ProductionGroup[]) {
+    const maximum = Math.max(...rows.map(item => Number(item.quantidadeProduzida ?? 0)), 1);
+    return Math.min(100, Math.round(Number(value ?? 0) / maximum * 100));
+  }
+
+  exportReport(format: ReportExportFormat) {
+    const companyId = this.auth.companyId();
+    if (!companyId || this.exportingFormat() || !this.reportHasData()) return;
+    const query = { ...this.dashboardPeriod(), setorId: this.reportSectorId() ?? undefined, top: 100 };
+    this.exportingFormat.set(format);
+    this.reportFeedback.set(`Preparando arquivo ${format === 'XLSX' ? 'Excel' : 'CSV'}...`);
+    this.resourceApi.exportReport(companyId, format, query).subscribe({
+      next: response => {
+        const contentType = response.headers.get('Content-Type') ?? '';
+        const validType = format === 'CSV' ? contentType.toLowerCase().includes('text/csv') : contentType.toLowerCase().includes('spreadsheetml.sheet');
+        if (!validType) {
+          this.reportError.set(`O servidor retornou um formato inesperado para ${format === 'CSV' ? 'CSV' : 'Excel'}.`);
+          this.reportFeedback.set('Falha ao validar o arquivo exportado.');
+          this.exportingFormat.set(null);
+          return;
+        }
+        const period = this.dashboardPeriod();
+        const fallback = `relatorio-executivo-${period.inicio.slice(0, 10)}-a-${period.fim.slice(0, 10)}.${format.toLowerCase()}`;
+        const filename = reportFilename(response.headers.get('Content-Disposition'), fallback);
+        const url = URL.createObjectURL(response.body ?? new Blob());
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        this.reportError.set('');
+        this.reportFeedback.set(`${format === 'XLSX' ? 'Excel' : 'CSV'} exportado: ${filename}`);
+        this.exportingFormat.set(null);
+      },
+      error: error => {
+        this.reportError.set(this.safeError('Não foi possível exportar o relatório.', error));
+        this.reportFeedback.set('Falha ao baixar o arquivo. Tente novamente.');
+        this.exportingFormat.set(null);
+      }
     });
   }
 

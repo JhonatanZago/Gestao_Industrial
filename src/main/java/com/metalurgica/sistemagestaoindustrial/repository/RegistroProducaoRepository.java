@@ -12,9 +12,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface RegistroProducaoRepository extends JpaRepository<RegistroProducao, Long>, JpaSpecificationExecutor<RegistroProducao> {
+    boolean existsByFingerprintRegistro(String fingerprintRegistro);
+    boolean existsByEmpresaIdAndSetorIdAndFuncionarioIdAndPecaIdAndQuantidadeAndInicioAndFim(
+            Long empresaId, Long setorId, Long funcionarioId, Long pecaId, BigDecimal quantidade,
+            LocalDateTime inicio, LocalDateTime fim);
+
     @Override
     @EntityGraph(attributePaths = {"empresa", "setor", "funcionario", "peca", "maquina", "turno"})
     List<RegistroProducao> findAll(Specification<RegistroProducao> spec, Sort sort);

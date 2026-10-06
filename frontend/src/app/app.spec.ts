@@ -251,7 +251,7 @@ describe('App', () => {
     const http = TestBed.inject(HttpTestingController);
     app.activeView.set('setores');
 
-    app.selectPeriod('Agosto / 2026');
+    app.selectedPeriod.set('Agosto / 2026');
     app.refreshCurrentView();
 
     const dashboard = http.expectOne(request => request.url === '/api/v1/empresas/12/analytics/dashboard');
@@ -304,5 +304,79 @@ describe('App', () => {
     expect(cancelledSectors.cancelled).toBe(true);
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.sector-state--error')?.textContent).toContain('Tentar novamente');
+  });
+
+  it('generates the report with the selected period and sector, then renders real preview data', () => {
+    sessionStorage.setItem('metalurgica.erp.session', JSON.stringify({ token: 'test-token', companyId: 12, permissions: ['RELATORIO_VISUALIZAR'] }));
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+    app.activeView.set('relatorios');
+    app.sectorsOptions.set([{ id: 3, codigo: 'KTL', nome: 'KTL Homologacao' }]);
+    app.selectPeriod('Agosto / 2026');
+    app.changeReportSector('3');
+
+    app.loadReport();
+    expect(app.reportState()).toBe('LOADING');
+    app.loadReport();
+    const request = http.expectOne('/api/v1/empresas/12/relatorios/simplificado?inicio=2026-08-01T00:00:00&fim=2026-08-31T23:59:59&setorId=3');
+    expect(request.request.method).toBe('GET');
+    request.flush({ dashboard: { inicio: '2026-08-01T00:00:00', fim: '2026-08-31T23:59:59', quantidadeProduzida: 120, setoresComDados: 1, funcionariosEnvolvidos: 2, codigosPecaProduzidos: 2, porSetor: [{ id: 3, nome: 'KTL Homologacao', quantidadeProduzida: 120 }], porFuncionario: [{ id: 9, nome: 'Operador', quantidadeProduzida: 120 }], porPeca: [{ id: 4, nome: 'Suporte', quantidadeProduzida: 120 }], evolucao: [{ periodo: '2026-08-01', quantidadeProduzida: 120 }] } });
+    fixture.detectChanges();
+
+    expect(app.reportState()).toBe('SUCCESS');
+    expect(app.reportDashboard()?.quantidadeProduzida).toBe(120);
+    expect(app.reportStats().map(stat => stat.value)).toEqual(['120', '1', '2', '2']);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.report-preview')?.textContent).toContain('Relatório de Produção');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.report-kpi').length).toBe(4);
+    expect((fixture.nativeElement as HTMLElement).querySelector('.report-rankings')?.textContent).toContain('Suporte');
+  });
+
+  it('shows empty and recoverable report errors without rendering a broken chart', () => {
+    sessionStorage.setItem('metalurgica.erp.session', JSON.stringify({ token: 'test-token', companyId: 12, permissions: ['RELATORIO_VISUALIZAR'] }));
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const http = TestBed.inject(HttpTestingController);
+    app.activeView.set('relatorios');
+    app.loadReport();
+    http.expectOne(request => request.url.includes('/relatorios/simplificado')).flush({ dashboard: { quantidadeProduzida: 0, setoresComDados: 0, funcionariosEnvolvidos: 0, codigosPecaProduzidos: 0, porSetor: [], porFuncionario: [], porPeca: [], evolucao: [] } });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.report-state--empty')?.textContent).toContain('Nenhum dado encontrado');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.report-chart-panel')).toBeNull();
+
+    app.loadReport();
+    http.expectOne(request => request.url.includes('/relatorios/simplificado')).flush({}, { status: 503, statusText: 'Unavailable', headers: new HttpHeaders({ 'X-Correlation-Id': 'cid-report' }) });
+    fixture.detectChanges();
+    expect(app.reportState()).toBe('ERROR');
+    expect(app.reportError()).toContain('cid-report');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.report-state--error')?.textContent).toContain('Tentar novamente');
+  });
+
+  it('preserves report period and sector in employee and part overview/detail routes and breadcrumbs', () => {
+    sessionStorage.setItem('metalurgica.erp.session', JSON.stringify({ token: 'test-token', companyId: 12, permissions: ['RELATORIO_VISUALIZAR'] }));
+    history.replaceState({}, '', '/');
+    const app = TestBed.createComponent(App).componentInstance;
+    app.sectorsOptions.set([{ id: 3, codigo: 'KTL', nome: 'KTL Homologação' }]);
+    app.selectedPeriod.set('Setembro / 2026');
+    app.reportSectorId.set(3);
+
+    app.navigateReport({ screen: 'employees' });
+    expect(location.pathname).toBe('/app/relatorios/funcionarios');
+    expect(new URLSearchParams(location.search).get('period')).toBe('Setembro / 2026');
+    expect(new URLSearchParams(location.search).get('setorId')).toBe('3');
+    app.navigateReport({ screen: 'employee', id: 501 });
+    expect(location.pathname).toBe('/app/relatorios/funcionarios/501');
+    app.navigateReport({ screen: 'employees' });
+    expect(app.selectedPeriod()).toBe('Setembro / 2026');
+    expect(app.reportSectorId()).toBe(3);
+    app.navigateReport({ screen: 'parts' });
+    app.navigateReport({ screen: 'part', id: 88 });
+    expect(location.pathname).toBe('/app/relatorios/pecas/88');
+    expect(new URLSearchParams(location.search).get('setorId')).toBe('3');
+    app.navigateReport({ screen: 'relatorios' });
+    expect(location.pathname).toBe('/app/relatorios');
+    expect(app.selectedPeriod()).toBe('Setembro / 2026');
+    expect(app.reportSectorId()).toBe(3);
+    history.replaceState({}, '', '/');
   });
 });

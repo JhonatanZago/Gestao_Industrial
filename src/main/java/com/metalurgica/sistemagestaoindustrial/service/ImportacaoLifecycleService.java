@@ -44,6 +44,12 @@ public class ImportacaoLifecycleService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Long create(Long empresaId, Long setorId, String nomeArquivo, String hash, String correlationId) {
+        return create(empresaId, setorId, nomeArquivo, hash, correlationId, OrigemImportacao.MANUAL);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Long create(Long empresaId, Long setorId, String nomeArquivo, String hash, String correlationId,
+                       OrigemImportacao origem) {
         var empresa = empresaRepository.findById(empresaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada."));
         var setor = setorRepository.findByIdAndEmpresaId(setorId, empresaId)
@@ -52,6 +58,7 @@ public class ImportacaoLifecycleService {
         importacao.setEmpresa(empresa);
         importacao.setSetor(setor);
         importacao.setNomeArquivo(nomeArquivo);
+        importacao.setOrigem(origem);
         importacao.setHashArquivo(hash);
         importacao.setCorrelationId(correlationId);
         importacao.touchCreate();
@@ -100,9 +107,11 @@ public class ImportacaoLifecycleService {
             registro.setQuantidade(line.quantidade());
             registro.setInicio(line.inicio());
             registro.setFim(line.fim());
-            registro.setOrigem(OrigemProducao.IMPORTACAO);
+            registro.setOrigem(importacao.getOrigem() == OrigemImportacao.FILE_WATCHER
+                    ? OrigemProducao.FILE_WATCHER : OrigemProducao.IMPORTACAO);
             registro.setImportacao(importacao);
             registro.setImportacaoLinha(line.linha().linha());
+            registro.setFingerprintRegistro(line.fingerprint());
             registro.touchForCreate();
             var saved = producaoRepository.save(registro);
             auditoriaService.record(importacao.getEmpresa().getId(), TipoRecursoAuditoria.REGISTRO_PRODUCAO,
@@ -111,6 +120,8 @@ public class ImportacaoLifecycleService {
                             "importacaoId", importacao.getId()), importacao.getCorrelationId());
         }
         importacao.setLinhasImportadas(validation.validas().size());
+        importacao.setLinhasIgnoradas(validation.ignoradas().size());
+        saveIgnored(importacao, validation.ignoradas());
         importacao.setStatus(StatusImportacao.CONCLUIDA);
         importacao.setFinalizadoEm(OffsetDateTime.now());
         auditImport(importacao);
@@ -135,8 +146,9 @@ public class ImportacaoLifecycleService {
 
     private static void applyTotals(ImportacaoProducao importacao, ValidacaoImportacaoResult validation) {
         importacao.setTotalLinhas(validation.totalLinhas());
-        importacao.setLinhasValidas(validation.validas().size());
+        importacao.setLinhasValidas(validation.validas().size() + validation.ignoradas().size());
         importacao.setLinhasInvalidas(validation.erros().size());
+        importacao.setLinhasIgnoradas(validation.ignoradas().size());
     }
 
     private void saveErrors(ImportacaoProducao importacao, List<ImportacaoLinhaErro> errors) {
@@ -153,15 +165,31 @@ public class ImportacaoLifecycleService {
         }).toList());
     }
 
+    private void saveIgnored(ImportacaoProducao importacao, List<LinhaValidadaImportacao> lines) {
+        resultadoRepository.saveAll(lines.stream().map(line -> {
+            var result = new ResultadoLinhaImportacao();
+            result.setImportacao(importacao);
+            result.setNumeroLinha(line.linha().linha());
+            result.setStatus("IGNORADO");
+            result.setCodigoFuncionario(line.linha().codigoFuncionario());
+            result.setCodigoPeca(line.linha().codigoPeca());
+            result.setCodigoErro("JA_PROCESSADO");
+            result.setMensagem("Registro já processado anteriormente.");
+            return result;
+        }).toList());
+    }
+
     private void auditImport(ImportacaoProducao importacao) {
         var metadata = new LinkedHashMap<String, Object>();
         metadata.put("importacaoId", importacao.getId());
         metadata.put("arquivoNome", importacao.getNomeArquivo());
+        metadata.put("origem", importacao.getOrigem());
         metadata.put("setorId", importacao.getSetor().getId());
         metadata.put("totalLinhas", importacao.getTotalLinhas());
         metadata.put("linhasValidas", importacao.getLinhasValidas());
         metadata.put("linhasInvalidas", importacao.getLinhasInvalidas());
         metadata.put("linhasImportadas", importacao.getLinhasImportadas());
+        metadata.put("linhasIgnoradas", importacao.getLinhasIgnoradas());
         metadata.put("status", importacao.getStatus());
         metadata.put("dataHora", importacao.getFinalizadoEm());
         metadata.put("erroCodigo", importacao.getErroCodigo());

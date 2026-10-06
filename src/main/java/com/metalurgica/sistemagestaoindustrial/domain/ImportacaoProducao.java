@@ -6,9 +6,10 @@ public class ImportacaoProducao {
  @ManyToOne(fetch=FetchType.LAZY,optional=false) @JoinColumn(name="empresa_id",nullable=false) private Empresa empresa;
  @ManyToOne(fetch=FetchType.LAZY,optional=false) @JoinColumn(name="setor_id",nullable=false) private Setor setor;
  @Column(name="nome_arquivo",nullable=false,length=255) private String nomeArquivo;
+ @Enumerated(EnumType.STRING) @Column(name="origem",nullable=false,length=20) private OrigemImportacao origem = OrigemImportacao.MANUAL;
  @Column(name="hash_arquivo",nullable=false,length=64) private String hashArquivo;
  @Enumerated(EnumType.STRING) @Column(nullable=false,length=20) private StatusImportacao status;
- @Column(nullable=false) private int totalLinhas; @Column(nullable=false) private int linhasValidas; @Column(nullable=false) private int linhasInvalidas; @Column(nullable=false) private int linhasImportadas;
+ @Column(nullable=false) private int totalLinhas; @Column(nullable=false) private int linhasValidas; @Column(nullable=false) private int linhasInvalidas; @Column(nullable=false) private int linhasImportadas; @Column(nullable=false) private int linhasIgnoradas;
  @Column(name="iniciado_em",nullable=false) private OffsetDateTime iniciadoEm; @Column(name="finalizado_em") private OffsetDateTime finalizadoEm; @Column(name="created_at",nullable=false) private OffsetDateTime createdAt;
  @Column(name="correlation_id",length=100) private String correlationId;
  @Column(name="erro_codigo",length=80) private String erroCodigo;

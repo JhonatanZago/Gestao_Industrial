@@ -66,6 +66,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/api/v1/auth/login", "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness").permitAll()
                 .requestMatchers("/actuator/info", "/actuator/metrics/**", "/actuator/prometheus", "/api/v1/operacao/**").hasAuthority("OPERACAO_MONITORAR")
+                .requestMatchers("/api/v1/empresas/*/importacoes/automaticas/status").hasAuthority("OPERACAO_MONITORAR")
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
                 .decoder(jwtDecoder())
@@ -109,7 +110,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "X-Correlation-Id"));
-        configuration.setExposedHeaders(List.of("Authorization", "X-Correlation-Id", "Content-Disposition"));
+        configuration.setExposedHeaders(List.of("Authorization", "X-Correlation-Id"));
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
