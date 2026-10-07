@@ -568,6 +568,22 @@ A automação está sendo preparada e validada inicialmente em ambiente local. A
 
 ---
 
+# 🧩 Papel de cada tecnologia
+
+| Tecnologia | Responsabilidade no projeto |
+|---|---|
+| ☕ **Java 17** | Regras de negócio, validações e processamento dos dados |
+| 🍃 **Spring Boot** | Estrutura e execução do backend |
+| 🅰️ **Angular** | Interface web, dashboards, tabelas e relatórios |
+| 🔷 **TypeScript** | Lógica e tipagem do frontend |
+| 🔗 **REST API** | Comunicação entre frontend e backend |
+| 🗄️ **Spring Data JPA** | Persistência e consultas ao banco de dados |
+| 📄 **Apache POI** | Leitura e processamento das planilhas Excel |
+| 🐘 **Gradle** | Dependências, testes e build do backend |
+| 🌿 **Git/GitHub** | Versionamento e armazenamento do código |
+| 📋 **OpenSpec** | Organização de requisitos, especificações e tasks |
+
+
 # 👨‍💻 Autor
 
 **Jhonatan Zago**
