@@ -23,4 +23,11 @@ class PageableSecurityInterceptorTests {
         request.addParameter("sort", "nome desc,senhaHash");
         assertThrows(IllegalArgumentException.class, () -> interceptor.preHandle(request, null, null));
     }
+
+    @Test
+    void aceitaSortIdParaLinhasDeImportacao() {
+        var request = new MockHttpServletRequest("GET", "/api/v1/empresas/1/importacoes/producao/7/linhas");
+        request.addParameter("sort", "id,asc");
+        assertDoesNotThrow(() -> interceptor.preHandle(request, null, null));
+    }
 }

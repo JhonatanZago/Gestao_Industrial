@@ -24,7 +24,9 @@ Funcionário / peça / relatório simplificado
 - A duração é `Hora Fim - Hora Início` por registro.
 - Intervalos entre registros não são paradas.
 - Erros retornam status, contagens e linha/campo/motivo sem stack trace.
-- A mesma carga não pode gerar registros duplicados por reimportação.
+- A mesma carga não pode gerar registros duplicados por reimportação do mesmo
+  arquivo; a limitação para duas produções perfeitamente idênticas está
+  documentada em `docs/IDENTIDADE_PRODUCAO_V1.md`.
 
 ## Dados da fixture
 

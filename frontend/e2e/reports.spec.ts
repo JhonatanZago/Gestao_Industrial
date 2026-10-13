@@ -36,7 +36,7 @@ test('reports queries, filters, previews and exports production through the real
   const employeeList = page.waitForResponse(response => response.url().includes('/analytics/funcionarios?') && response.status() === 200);
   await page.getByRole('button', { name: /Ver todos os funcion/ }).click();
   expect((await employeeList).status()).toBe(200);
-  await expect(page.getByRole('heading', { name: 'Visão Geral de Funcionários' })).toBeVisible();
+  await expect(page.locator('app-report-drilldown').getByRole('heading', { name: 'Visão Geral de Funcionários' })).toBeVisible();
   await expect(page.locator('.ranking-panel tbody tr').first()).toBeVisible();
   await page.screenshot({ path: 'relatorios-funcionarios-1920.png', fullPage: true });
   await page.setViewportSize({ width: 1366, height: 768 });
@@ -46,18 +46,18 @@ test('reports queries, filters, previews and exports production through the real
   const employeeDetail = page.waitForResponse(response => /\/analytics\/funcionarios\/\d+\?/.test(response.url()) && response.status() === 200);
   await page.locator('.ranking-panel tbody tr').first().click();
   expect((await employeeDetail).status()).toBe(200);
-  await expect(page.getByRole('heading', { name: 'Visão do Funcionário' })).toBeVisible();
+  await expect(page.locator('app-report-drilldown').getByRole('heading', { name: 'Visão do Funcionário' })).toBeVisible();
   await expect(page.locator('.related-panel')).toBeVisible();
   await page.screenshot({ path: 'relatorios-funcionario-detalhe-1920.png', fullPage: true });
   await page.getByRole('button', { name: 'Funcionários' }).click();
-  await expect(page.getByRole('heading', { name: 'Visão Geral de Funcionários' })).toBeVisible();
+  await expect(page.locator('app-report-drilldown').getByRole('heading', { name: 'Visão Geral de Funcionários' })).toBeVisible();
   await page.getByRole('button', { name: 'Relatórios' }).click();
   await expect(page.locator('.report-preview')).toBeVisible();
 
   const partsList = page.waitForResponse(response => response.url().includes('/analytics/pecas?') && response.status() === 200);
   await page.getByRole('button', { name: /Ver todas as pe/ }).click();
   expect((await partsList).status()).toBe(200);
-  await expect(page.getByRole('heading', { name: 'Visão Geral de Peças' })).toBeVisible();
+  await expect(page.locator('app-report-drilldown').getByRole('heading', { name: 'Visão Geral de Peças' })).toBeVisible();
   await expect(page.locator('.ranking-panel tbody tr').first()).toBeVisible();
   await page.screenshot({ path: 'relatorios-pecas-1920.png', fullPage: true });
   await page.setViewportSize({ width: 1366, height: 768 });
@@ -67,11 +67,11 @@ test('reports queries, filters, previews and exports production through the real
   const partDetailData = page.waitForResponse(response => response.url().includes('/analytics/dashboard?') && response.url().includes('pecaId=') && response.status() === 200);
   await page.locator('.ranking-panel tbody tr').first().click();
   expect((await partDetailData).status()).toBe(200);
-  await expect(page.getByRole('heading', { name: 'Visão da Peça' })).toBeVisible();
+  await expect(page.locator('app-report-drilldown').getByRole('heading', { name: 'Visão da Peça' })).toBeVisible();
   await expect(page.locator('.related-panel')).toBeVisible();
   await page.screenshot({ path: 'relatorios-peca-detalhe-1920.png', fullPage: true });
   await page.getByRole('button', { name: 'Peças' }).click();
-  await expect(page.getByRole('heading', { name: 'Visão Geral de Peças' })).toBeVisible();
+  await expect(page.locator('app-report-drilldown').getByRole('heading', { name: 'Visão Geral de Peças' })).toBeVisible();
   await page.getByRole('button', { name: 'Relatórios' }).click();
   await expect(page.locator('.report-preview')).toBeVisible();
 

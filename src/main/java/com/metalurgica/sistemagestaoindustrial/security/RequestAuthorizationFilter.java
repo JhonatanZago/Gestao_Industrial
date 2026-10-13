@@ -70,6 +70,7 @@ public class RequestAuthorizationFilter extends OncePerRequestFilter {
         boolean write = !"GET".equalsIgnoreCase(method) && !"HEAD".equalsIgnoreCase(method);
         if (path.contains("/assistente/documentos")) return "AI_DOCUMENTO_GERENCIAR";
         if (path.contains("/assistente")) return "ANALYTICS_VISUALIZAR";
+        if (path.contains("/importacoes/automaticas/status")) return "OPERACAO_MONITORAR";
         if (path.contains("/usuarios")) return write ? "USUARIO_GERENCIAR" : "USUARIO_VISUALIZAR";
         if (path.contains("/setores")) return write ? "SETOR_GERENCIAR" : "SETOR_VISUALIZAR";
         if (path.contains("/funcionarios")) return write ? "FUNCIONARIO_GERENCIAR" : "FUNCIONARIO_VISUALIZAR";

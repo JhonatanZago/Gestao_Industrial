@@ -391,7 +391,7 @@ export class App {
 
   private loadImportLineErrors(companyId: number, sectorId: number, importId: number) {
     this.importLinesLoading.set(true);
-    this.resourceApi.importLines(companyId, sectorId, importId, { size: 100, sort: 'numeroLinha,asc' }).subscribe({
+    this.resourceApi.importLines(companyId, sectorId, importId, { size: 100, sort: 'id,asc' }).subscribe({
       next: page => { this.importLineErrors.set(page.content); this.importLinesLoading.set(false); },
       error: error => { console.error('[Importação] Falha ao consultar erros por linha.', error); this.importLinesLoading.set(false); }
     });
